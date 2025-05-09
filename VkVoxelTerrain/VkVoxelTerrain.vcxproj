@@ -153,7 +153,7 @@ popd</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="FPSCam.cpp" />
+    <ClCompile Include="camera_fps.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -161,8 +161,9 @@ popd</Command>
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FPSCam.h" />
+    <ClInclude Include="camera_fps.h" />
     <ClInclude Include="globals.h" />
+    <ClInclude Include="types.h" />
     <ClInclude Include="vulkan_setup.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

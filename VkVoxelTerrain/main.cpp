@@ -1,5 +1,6 @@
-#include "FPSCam.h"
 #include "globals.h"
+#include "camera_fps.h"
+#include "types.h"
 #include "vulkan_setup.h"
 
 #define GLM_FORCE_RADIANS
@@ -18,39 +19,27 @@
 #include <array>
 #include <algorithm>
 
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
 
-    static VkVertexInputBindingDescription getBindingDescription() {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+const int MAX_FRAMES_IN_FLIGHT = 2;
 
-        return bindingDescription;
-    }
+float MOUSE_X = 0.f;
+float MOUSE_Y = 0.f;
 
-    static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        return attributeDescriptions;
-    }
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
 };
 
-struct UniformBufferObject {
-    glm::mat4 model;
-    glm::mat4 viewproj;
+const std::vector<const char*> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
+
+#ifdef NDEBUG
+const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+#endif
 
 namespace constants
 {
@@ -146,7 +135,7 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
-    FPSCam camera{ WIDTH, HEIGHT, glm::vec3(0., 0., 2.) };
+    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(0., 0., 2.) };
 
     bool framebufferResized = false;
 
@@ -155,7 +144,7 @@ private:
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+        window = glfwCreateWindow(WIDTH, HEIGHT, "Voxel Terrain", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -511,6 +500,7 @@ private:
     }
 
     void createGraphicsPipeline() {
+        // Shader Modules
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
 
@@ -582,6 +572,7 @@ private:
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
+        // Setup dynamic resizing of viewport
         std::vector<VkDynamicState> dynamicStates = {
             VK_DYNAMIC_STATE_VIEWPORT,
             VK_DYNAMIC_STATE_SCISSOR

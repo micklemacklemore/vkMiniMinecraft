@@ -1,4 +1,4 @@
-#include "FPSCam.h"
+#include "camera_fps.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-FPSCam::FPSCam(uint32_t width, uint32_t height, glm::vec3 pos)
+CameraFPS::CameraFPS(uint32_t width, uint32_t height, glm::vec3 pos)
     : mForward(0, 0, -1),
     mRight(1, 0, 0),
     mUp(0, 1, 0),
@@ -24,20 +24,20 @@ FPSCam::FPSCam(uint32_t width, uint32_t height, glm::vec3 pos)
     mMouseSensitivity(0.1f) {
 }
 
-void FPSCam::setCameraWidthHeight(uint32_t w, uint32_t h) {
+void CameraFPS::setCameraWidthHeight(uint32_t w, uint32_t h) {
     mWidth = w;
     mHeight = h;
     mAspect = w / static_cast<float>(h);
 }
 
-glm::mat4 FPSCam::getViewProjectionMatrix() {
+glm::mat4 CameraFPS::getViewProjectionMatrix() {
     glm::mat4 persp = glm::perspective(glm::radians(mFovy), mAspect, mNearClip, mFarClip); 
     glm::mat4 view = glm::lookAt(mPosition, mPosition + mForward, mUp);
     persp[1][1] *= -1; // flip the Y for vulkan compatible
     return persp * view; 
 }
 
-void FPSCam::processInput(Input input, float dt) {
+void CameraFPS::processInput(Input input, float dt) {
     // std::cout << "xrel: " << input.mouseX << " yrel: " << input.mouseY << "\n"; 
 
     if (input.mouseX|| input.mouseY) {

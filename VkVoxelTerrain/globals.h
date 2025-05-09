@@ -6,24 +6,16 @@
 #include <cstdint>
 #include <vector>
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+extern const uint32_t WIDTH;
+extern const uint32_t HEIGHT;
 
-const int MAX_FRAMES_IN_FLIGHT = 2;
+extern const int MAX_FRAMES_IN_FLIGHT;
 
-float MOUSE_X = 0.f;
-float MOUSE_Y = 0.f;
+extern float MOUSE_X;
+extern float MOUSE_Y;
 
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
+extern const std::vector<const char*> validationLayers;
+extern const std::vector<const char*> deviceExtensions;
 
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+extern const bool enableValidationLayers;
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif

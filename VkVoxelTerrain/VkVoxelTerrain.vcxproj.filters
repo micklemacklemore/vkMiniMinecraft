@@ -21,7 +21,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FPSCam.cpp">
+    <ClCompile Include="camera_fps.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,7 +34,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FPSCam.h">
+    <ClInclude Include="camera_fps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vulkan_setup.h">
@@ -42,6 +42,9 @@
     </ClInclude>
     <ClInclude Include="globals.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
