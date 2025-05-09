@@ -1,10 +1,5 @@
 #include "camera_fps.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <iostream>
 
 CameraFPS::CameraFPS(uint32_t width, uint32_t height, glm::vec3 pos)
@@ -73,4 +68,8 @@ void CameraFPS::processInput(Input input, float dt) {
         mPosition -= mRight * velocity;
     if (input.dPressed)
         mPosition += mRight * velocity;
+    if (input.ePressed)
+        mPosition += mUp * velocity; 
+    if (input.qPressed)
+        mPosition -= mUp * velocity; 
 }

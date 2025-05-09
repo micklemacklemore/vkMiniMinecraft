@@ -1,8 +1,8 @@
 #pragma once
 
+#include "glm_includes.h"
 #include "types.h"
 
-#include <glm/glm.hpp>
 #include <cstdint>
 
 class CameraFPS {

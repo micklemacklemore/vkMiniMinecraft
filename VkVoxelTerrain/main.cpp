@@ -135,9 +135,9 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
-    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(0., 0., 2.) };
-
     bool framebufferResized = false;
+
+    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(0., 0., 2.) };
 
     void initWindow() {
         glfwInit();
@@ -221,6 +221,12 @@ private:
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             input.dPressed = true; 
+        }
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            input.ePressed = true;
+        }
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            input.qPressed = true;
         }
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {

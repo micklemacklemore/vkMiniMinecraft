@@ -63,13 +63,16 @@ struct UniformBufferObject {
 };
 
 struct Input {
-    bool wPressed, aPressed, sPressed, dPressed;
+    bool wPressed, aPressed,
+        sPressed, dPressed,
+        ePressed, qPressed; 
     bool spacePressed;
     int mouseX, mouseY;
 
     Input()
         : wPressed(false), aPressed(false), sPressed(false),
-        dPressed(false), spacePressed(false), mouseX(0.f), mouseY(0.f)
+        dPressed(false), ePressed(false), qPressed(false), 
+        spacePressed(false), mouseX(0.f), mouseY(0.f)
     {
     }
 
@@ -78,6 +81,8 @@ struct Input {
         aPressed = false;
         sPressed = false;
         dPressed = false;
+        ePressed = false; 
+        qPressed = false; 
         spacePressed = false;
         mouseX = 0;
         mouseY = 0;
