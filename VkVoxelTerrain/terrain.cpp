@@ -1,7 +1,5 @@
-#if 0
-
 #include "terrain.h"
-#include "cube.h"
+// #include "cube.h"
 #include <stdexcept>
 #include <iostream>
 
@@ -230,5 +228,3 @@ void Terrain::CreateTestScene()
         setBlockAt(32, y, 32, GRASS);
     }
 }
-
-#endif

@@ -1,5 +1,4 @@
 #pragma once
-
 #include "globals.h"
 
 #define GLM_FORCE_RADIANS

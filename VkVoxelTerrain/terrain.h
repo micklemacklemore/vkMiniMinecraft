@@ -1,7 +1,4 @@
 #pragma once
-
-#if 0
-
 #include "globals.h"
 #include "smartpointerhelp.h"
 #include "glm_includes.h"
@@ -9,8 +6,8 @@
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
-#include "shaderprogram.h"
-#include "cube.h"
+// #include "shaderprogram.h"
+// #include "cube.h"
 
 
 //using namespace std;
@@ -93,6 +90,3 @@ public:
     // see when the base code is run.
     void CreateTestScene();
 };
-
-
-#endif

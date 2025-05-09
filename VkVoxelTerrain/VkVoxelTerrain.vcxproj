@@ -154,6 +154,7 @@ popd</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="camera_fps.cpp" />
+    <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="terrain.cpp" />
   </ItemGroup>
@@ -163,8 +164,10 @@ popd</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera_fps.h" />
+    <ClInclude Include="Chunk.h" />
     <ClInclude Include="glm_includes.h" />
     <ClInclude Include="globals.h" />
+    <ClInclude Include="smartpointerhelp.h" />
     <ClInclude Include="terrain.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="vulkan_setup.h" />
