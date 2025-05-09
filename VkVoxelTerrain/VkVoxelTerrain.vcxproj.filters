@@ -37,7 +37,7 @@
     <ClInclude Include="FPSCam.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="init.h">
+    <ClInclude Include="vulkan_setup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="globals.h">
