@@ -3,12 +3,11 @@
 #include <stdexcept>
 #include <iostream>
 
-Terrain::Terrain(OpenGLContext *context)
-    : m_chunks(), m_generatedTerrain(), m_geomCube(context), mp_context(context)
+Terrain::Terrain()
+    : m_chunks(), m_generatedTerrain()
 {}
 
 Terrain::~Terrain() {
-    m_geomCube.destroyVBOdata();
 }
 
 // Combine two 32-bit ints into one 64-bit int
@@ -136,17 +135,14 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
         cPtr->linkNeighbor(chunkWest, XNEG);
     }
     return cPtr;
-    return cPtr;
 }
 
 // TODO: When you make Chunk inherit from Drawable, change this code so
 // it draws each Chunk with the given ShaderProgram, remembering to set the
 // model matrix to the proper X and Z translation!
-void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram) {
-    m_geomCube.clearOffsetBuf();
-    m_geomCube.clearColorBuf();
-
-    std::vector<glm::vec3> offsets, colors;
+void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout) {
+    // m_geomCube.clearOffsetBuf();
+    // m_geomCube.clearColorBuf();
 
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
@@ -156,41 +152,41 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shader
                     for(int k = 0; k < 16; ++k) {
                         BlockType t = chunk->getBlockAt(i, j, k);
 
+                        glm::mat4 pc; 
+
                         if(t != EMPTY) {
-                            offsets.push_back(glm::vec3(i+x, j, k+z));
+                            pc[0] = glm::vec4(i+x, j, k+z, 1.);
                             switch(t) {
                             case GRASS:
-                                colors.push_back(glm::vec3(95.f, 159.f, 53.f) / 255.f);
+                                pc[1] = glm::vec4(95.f, 159.f, 53.f, 255.f) / 255.f;
                                 break;
                             case DIRT:
-                                colors.push_back(glm::vec3(121.f, 85.f, 58.f) / 255.f);
+                                pc[1] = glm::vec4(121.f, 85.f, 58.f, 255.f) / 255.f;
                                 break;
                             case STONE:
-                                colors.push_back(glm::vec3(0.5f));
+                                pc[1] = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
                                 break;
                             case WATER:
-                                colors.push_back(glm::vec3(0.f, 0.f, 0.75f));
+                                pc[1] = glm::vec4(0.f, 0.f, 0.75f, 1.0f);
                                 break;
                             default:
-                                // Other block types are not yet handled, so we default to debug purple
-                                colors.push_back(glm::vec3(1.f, 0.f, 1.f));
+                                pc[1] = glm::vec4(1.f, 0.f, 1.f, 1.0f); // Debug purple
                                 break;
                             }
+                            vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pc);
+                            vkCmdDrawIndexed(cmdBuffer, 36, 1, 0, 0, 0);
                         }
                     }
                 }
             }
         }
     }
-
-    m_geomCube.createInstancedVBOdata(offsets, colors);
-    shaderProgram->drawInstanced(m_geomCube);
 }
 
 void Terrain::CreateTestScene()
 {
     // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
-    m_geomCube.createVBOdata();
+    // m_geomCube.createVBOdata();
 
     // Create the Chunks that will
     // store the blocks for our
@@ -225,6 +221,6 @@ void Terrain::CreateTestScene()
     }
     // Add a central column
     for(int y = 129; y < 140; ++y) {
-        setBlockAt(32, y, 32, GRASS);
+        setBlockAt(32, y, 32, STONE);
     }
 }

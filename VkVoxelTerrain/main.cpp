@@ -2,6 +2,7 @@
 #include "camera_fps.h"
 #include "types.h"
 #include "vulkan_setup.h"
+#include "terrain.h"
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -80,6 +81,9 @@ public:
     void run() {
         initWindow();
         initVulkan();
+
+        terrain.CreateTestScene(); 
+
         mainLoop();
         cleanup();
     }
@@ -137,7 +141,8 @@ private:
 
     bool framebufferResized = false;
 
-    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(0., 0., 2.) };
+    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(64., 135., 64.) };
+    Terrain terrain; 
 
     void initWindow() {
         glfwInit();
@@ -589,11 +594,18 @@ private:
         dynamicState.pDynamicStates = dynamicStates.data();
 
         // Create Pipeline Layout
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // or fragment if needed
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = sizeof(glm::mat4);
+
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create pipeline layout!");
@@ -893,7 +905,7 @@ private:
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(constants::indices.size()), 1, 0, 0, 0);
+        terrain.draw(0, 64, 0, 64, commandBuffer, pipelineLayout);
 
         vkCmdEndRenderPass(commandBuffer);
 

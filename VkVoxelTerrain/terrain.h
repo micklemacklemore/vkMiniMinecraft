@@ -51,12 +51,9 @@ private:
     // for every non-EMPTY block within its Chunks. This is horribly
     // inefficient, and will cause your game to run very slowly until
     // milestone 1's Chunk VBO setup is completed.
-    Cube m_geomCube;
-
-    OpenGLContext* mp_context;
 
 public:
-    Terrain(OpenGLContext *context);
+    Terrain();
     ~Terrain();
 
     // Instantiates a new Chunk and stores it in
@@ -84,7 +81,7 @@ public:
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided
     // ShaderProgram
-    void draw(int minX, int maxX, int minZ, int maxZ, ShaderProgram *shaderProgram);
+    void draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
 
     // Initializes the Chunks that store the 64 x 256 x 64 block scene you
     // see when the base code is run.
