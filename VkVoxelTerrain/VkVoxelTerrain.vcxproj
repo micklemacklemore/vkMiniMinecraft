@@ -170,7 +170,9 @@ popd</Command>
     <ClInclude Include="smartpointerhelp.h" />
     <ClInclude Include="terrain.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="vulkan_resources.h" />
     <ClInclude Include="vulkan_setup.h" />
+    <ClInclude Include="vulkan_swapchain.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
