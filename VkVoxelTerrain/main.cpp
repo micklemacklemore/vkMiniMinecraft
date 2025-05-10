@@ -102,9 +102,9 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-    VkQueue transferQueue; 
+    VkQueue queueGraphics;
+    VkQueue queuePresent;
+    VkQueue queueTransfer; 
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
@@ -136,6 +136,10 @@ private:
 
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+
+    VkImage textureImage;
+    VkDeviceMemory textureImageMemory;
+    VkImageView textureImageView;
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
@@ -169,7 +173,7 @@ private:
         setupDebugMessenger(instance, debugMessenger);
         createSurface(instance, window, surface);
         pickPhysicalDevice(instance, surface, physicalDevice);
-        createLogicalDevice(physicalDevice, surface, device, graphicsQueue, presentQueue, transferQueue);
+        createLogicalDevice(physicalDevice, surface, device, queueGraphics, queuePresent, queueTransfer);
 
         // Initialize swapchain
         createSwapChain(
@@ -203,6 +207,8 @@ private:
         createSyncObjects();
 
         // Inputs to shaders
+        createTextureImage(); 
+        createTextureImageView(); 
         createVertexBuffer();
         createIndexBuffer(); 
         createUniformBuffers();
@@ -296,6 +302,11 @@ private:
 
     void cleanup() {
         cleanupSwapChain();
+
+        vkDestroyImageView(device, textureImageView, nullptr);
+
+        vkDestroyImage(device, textureImage, nullptr);
+        vkFreeMemory(device, textureImageMemory, nullptr);
 
         vkDestroyBuffer(device, vertexBuffer, nullptr);
         vkFreeMemory(device, vertexBufferMemory, nullptr);
@@ -590,6 +601,58 @@ private:
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
+    void createTextureImage() {
+        int texWidth, texHeight, texChannels;
+        stbi_uc* pixels = stbi_load("textures/texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+        if (!pixels) {
+            throw std::runtime_error("failed to load texture image!");
+        }
+
+        // create a staging buffer
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+
+        createBuffer(device, physicalDevice, surface, 
+            imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+            stagingBuffer, stagingBufferMemory);
+
+        // copy image into staging buffer
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        memcpy(data, pixels, static_cast<size_t>(imageSize));
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        stbi_image_free(pixels);
+
+        // create image object
+        createImage(device, physicalDevice, surface, 
+            texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, 
+            VK_IMAGE_TILING_OPTIMAL, 
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+            textureImage, 
+            textureImageMemory
+        );
+
+        // copy staging buffer to image
+        transitionImageLayout(device, commandPoolTransfer, queueTransfer, 
+            textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, 
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        copyBufferToImage(device, commandPoolTransfer, queueTransfer, stagingBuffer, textureImage, 
+            static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)
+        );
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
+    }
+
+    void createTextureImageView() {
+        textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+    }
+
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(constants::vertices[0]) * constants::vertices.size();
 
@@ -606,7 +669,7 @@ private:
 
         // create device bufferand copy to buffer
         createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-        copyBuffer(device, commandPoolTransfer, transferQueue, stagingBuffer, vertexBuffer, bufferSize);
+        copyBuffer(device, commandPoolTransfer, queueTransfer, stagingBuffer, vertexBuffer, bufferSize);
 
         // destroy staging buffer
         vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -627,7 +690,7 @@ private:
 
         createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
-        copyBuffer(device, commandPoolTransfer, transferQueue, stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(device, commandPoolTransfer, queueTransfer, stagingBuffer, indexBuffer, bufferSize);
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
@@ -855,7 +918,7 @@ private:
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        if (vkQueueSubmit(queueGraphics, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
 
@@ -871,7 +934,7 @@ private:
 
         presentInfo.pImageIndices = &imageIndex;
 
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        result = vkQueuePresentKHR(queuePresent, &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
             framebufferResized = false;

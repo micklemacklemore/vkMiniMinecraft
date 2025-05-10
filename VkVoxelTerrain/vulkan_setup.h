@@ -75,8 +75,8 @@ void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDev
 /// Creates a Vulkan logical device and retrieves queues for graphics, presentation, transfer,
 /// and compute(TODO). 
 void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-    VkDevice& device, VkQueue& graphicsQueue,
-    VkQueue& presentQueue, VkQueue& transferQueue);
+    VkDevice& device, VkQueue& queueGraphics,
+    VkQueue& queuePresent, VkQueue& queueTransfer);
 
 
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -231,7 +231,7 @@ void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDev
 }
 
 void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, 
-    VkDevice& device, VkQueue& graphicsQueue, VkQueue& presentQueue, VkQueue& transferQueue) {
+    VkDevice& device, VkQueue& queueGraphics, VkQueue& queuePresent, VkQueue& queueTransfer) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -272,9 +272,9 @@ void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
         throw std::runtime_error("failed to create logical device!");
     }
 
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
-    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &queueGraphics);
+    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &queuePresent);
+    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &queueTransfer);
 }
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {

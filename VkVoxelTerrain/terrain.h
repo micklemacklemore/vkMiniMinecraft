@@ -6,11 +6,7 @@
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
-// #include "shaderprogram.h"
-// #include "cube.h"
 
-
-//using namespace std;
 
 // Helper functions to convert (x, z) to and from hash map key
 int64_t toKey(int x, int z);
