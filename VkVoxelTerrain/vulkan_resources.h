@@ -14,6 +14,16 @@
 // Finds suitable memory type from the GPU based on filter and desired properties.
 uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
+// Finds a supported format given a list of candidates (order from high to low priority), tiling and features requirements. 
+VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates,
+    VkImageTiling tiling, VkFormatFeatureFlags features);
+
+// Finds a suitable depth format. 
+VkFormat findDepthFormat(VkPhysicalDevice physicalDevice); 
+
+// Check if format has stencil component. 
+bool hasStencilComponent(VkFormat format); 
+
 // Helper functions for recording + submitting single-use commands. Command pool should be transient. 
 VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool);
 void endSingleTimeCommands(VkDevice device, VkCommandPool commandPool, VkQueue queue, VkCommandBuffer commandBuffer); 
@@ -41,7 +51,7 @@ void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue q
     VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 // creates a 2D imageview
-VkImageView createImageView(VkDevice device, VkImage image, VkFormat format);
+VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
 // ====== Implementations ======
 
@@ -89,6 +99,37 @@ uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
     }
 
     throw std::runtime_error("failed to find suitable memory type!");
+}
+
+VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, 
+    VkImageTiling tiling, VkFormatFeatureFlags features) 
+{
+    for (VkFormat format : candidates) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+            return format;
+        }
+        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("failed to find supported format!");
+}
+
+VkFormat findDepthFormat(VkPhysicalDevice physicalDevice) 
+{
+    return findSupportedFormat( physicalDevice,
+        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+bool hasStencilComponent(VkFormat format) {
+    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
 void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDeviceSize size, 
@@ -250,6 +291,13 @@ void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue q
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }
+    else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
     else {
         throw std::invalid_argument("unsupported layout transition!");
     }
@@ -266,13 +314,13 @@ void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue q
     endSingleTimeCommands(device, commandPool, queue, commandBuffer);
 }
 
-VkImageView createImageView(VkDevice device, VkImage image, VkFormat format) {
+VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
