@@ -155,8 +155,12 @@ popd</Command>
   <ItemGroup>
     <ClCompile Include="camera_fps.cpp" />
     <ClCompile Include="chunk.cpp" />
+    <ClCompile Include="globals.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="terrain.cpp" />
+    <ClCompile Include="vulkan_resources.cpp" />
+    <ClCompile Include="vulkan_setup.cpp" />
+    <ClCompile Include="vulkan_swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

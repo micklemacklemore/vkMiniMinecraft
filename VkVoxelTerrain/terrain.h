@@ -39,16 +39,19 @@ private:
     // surrounding the Player should be rendered, the Chunks
     // in the Terrain will never be deleted until the program is terminated.
     std::unordered_set<int64_t> m_generatedTerrain;
-
-    VkPipeline pipelinePushConstants; 
-    VkPipeline pipelineInstanced; 
-    VkPipeline pipelineChunks; 
-
+    VkPipeline pipelinePushConstants;
+    VkPipeline pipelineInstanced;
+    VkPipeline pipelineChunks;
 public:
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline* currentPipeline;
+
     Terrain();
     ~Terrain();
 
-    void buildPipelines(); 
+    void buildPipelines(VkDevice device, VkRenderPass renderpass);
+    void destroyPipelines(VkDevice device); 
 
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
