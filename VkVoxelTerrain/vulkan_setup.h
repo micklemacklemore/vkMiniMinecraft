@@ -171,6 +171,9 @@ void createInstance(VkInstance& instance) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
+    // Show the framerate regardless of debug or release
+    const char* frameRateValidation = "VK_LAYER_LUNARG_monitor";
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "VkVoxelTerrain";
@@ -197,7 +200,8 @@ void createInstance(VkInstance& instance) {
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
     else {
-        createInfo.enabledLayerCount = 0;
+        createInfo.enabledLayerCount = 1;
+        createInfo.ppEnabledLayerNames = &frameRateValidation;
 
         createInfo.pNext = nullptr;
     }
@@ -315,9 +319,6 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
         i++;
     }
 
-    if (!indices.isComplete())
-        throw std::runtime_error("Could not find all queue families.");
-
     return indices;
 }
 
@@ -351,7 +352,12 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;;
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(device, &properties);
+
+    return indices.isComplete() && extensionsSupported &&
+        swapChainAdequate && supportedFeatures.samplerAnisotropy;
+        // && properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {

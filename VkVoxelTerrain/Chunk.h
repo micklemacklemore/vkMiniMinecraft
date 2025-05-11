@@ -52,10 +52,14 @@ private:
     std::unordered_map<Direction, Chunk*, EnumHash> m_neighbors;
 
 public:
-    Chunk();
+    Chunk() = delete;
     Chunk(int x, int z);
     BlockType getBlockAt(unsigned int x, unsigned int y, unsigned int z) const;
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
+
+    void drawPushConstants(); 
+    void drawInstanced(); 
+    void drawChunked(); 
 };

@@ -10,6 +10,10 @@ Terrain::Terrain()
 Terrain::~Terrain() {
 }
 
+void Terrain::buildPipelines()
+{
+}
+
 // Combine two 32-bit ints into one 64-bit int
 // where the upper 32 bits are X and the lower 32 bits are Z
 int64_t toKey(int x, int z) {
@@ -147,6 +151,7 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBu
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
             const uPtr<Chunk> &chunk = getChunkAt(x, z);
+            // === draw with push constants
             for(int i = 0; i < 16; ++i) {
                 for(int j = 0; j < 256; ++j) {
                     for(int k = 0; k < 16; ++k) {
@@ -174,11 +179,12 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBu
                                 break;
                             }
                             vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pc);
-                            vkCmdDrawIndexed(cmdBuffer, 36, 1, 0, 0, 0);
+                            vkCmdDrawIndexed(cmdBuffer, 36, 1, 0, 0, 0);   
                         }
                     }
                 }
             }
+            // ===
         }
     }
 }

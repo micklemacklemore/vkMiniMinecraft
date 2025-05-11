@@ -36,3 +36,15 @@ void Chunk::linkNeighbor(uPtr<Chunk>& neighbor, Direction dir) {
         neighbor->m_neighbors[oppositeDirection.at(dir)] = this;
     }
 }
+
+void Chunk::drawPushConstants()
+{
+}
+
+void Chunk::drawInstanced()
+{
+}
+
+void Chunk::drawChunked()
+{
+}

@@ -31,11 +31,12 @@ float MOUSE_X = 0.f;
 float MOUSE_Y = 0.f;
 
 const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
+    "VK_LAYER_KHRONOS_validation",
+    "VK_LAYER_LUNARG_monitor"
 };
 
 const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
 #ifdef NDEBUG
@@ -202,11 +203,6 @@ private:
         pickPhysicalDevice(instance, surface, physicalDevice);
         createLogicalDevice(physicalDevice, surface, device, queueGraphics, queuePresent, queueTransfer);
 
-        // Create commmand pools, per-frame command buffers, sync 
-        createCommandPools();
-        createPerFrameCommandBuffers();
-        createSyncObjects();
-
         // Initialize swapchain
         createSwapChain(
             device,
@@ -224,6 +220,11 @@ private:
             swapChainImageViews,
             swapChainImages
         );
+
+        // Create commmand pools, per-frame command buffers, sync 
+        createCommandPools();
+        createPerFrameCommandBuffers();
+        createSyncObjects();
 
         // Create depth buffer
         createDepthResources();
