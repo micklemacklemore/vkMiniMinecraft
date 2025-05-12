@@ -3,10 +3,10 @@
 #include "smartpointerhelp.h"
 #include "glm_includes.h"
 #include "chunk.h"
+
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
-
 
 // Helper functions to convert (x, z) to and from hash map key
 int64_t toKey(int x, int z);
@@ -40,7 +40,6 @@ private:
     // in the Terrain will never be deleted until the program is terminated.
     std::unordered_set<int64_t> m_generatedTerrain;
     VkPipeline pipelinePushConstants;
-    VkPipeline pipelineInstanced;
     VkPipeline pipelineChunks;
 public:
     VkDescriptorSetLayout descriptorSetLayout;
@@ -51,7 +50,7 @@ public:
     ~Terrain();
 
     void buildPipelines(VkDevice device, VkRenderPass renderpass);
-    void destroyPipelines(VkDevice device); 
+    void destroyVkResources(VkDevice device); 
 
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
@@ -78,9 +77,10 @@ public:
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided
     // ShaderProgram
-    void draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout);
+    void draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet);
 
     // Initializes the Chunks that store the 64 x 256 x 64 block scene you
     // see when the base code is run.
-    void CreateTestScene();
+    void CreateTestScene(VkDevice device, VkPhysicalDevice physicalDevice,
+        VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue);
 };

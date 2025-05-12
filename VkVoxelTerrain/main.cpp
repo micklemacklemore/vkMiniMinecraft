@@ -44,61 +44,61 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-namespace constants
-{
-    const std::vector<Vertex> vertices = {
-        // Front face
-        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0
-        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1
-        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2
-        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {0.0f, 1.0f}}, // 3
-
-        // Back face
-        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0.0f, 0.0f}}, // 4
-        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {1.0f, 0.0f}}, // 5
-        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {1.0f, 1.0f}}, // 6
-        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {0.0f, 1.0f}}, // 7
-
-        // Left face
-        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {0.0f, 0.0f}}, // 8
-        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {1.0f, 0.0f}}, // 9
-        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {1.0f, 1.0f}}, // 10
-        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {0.0f, 1.0f}}, // 11
-
-        // Right face
-        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {0.0f, 0.0f}}, // 12
-        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {1.0f, 0.0f}}, // 13
-        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {1.0f, 1.0f}}, // 14
-        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {0.0f, 1.0f}}, // 15
-
-        // Top face
-        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {0.0f, 0.0f}}, // 16
-        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 0.0f}}, // 17
-        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {1.0f, 1.0f}}, // 18
-        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {0.0f, 1.0f}}, // 19
-
-        // Bottom face
-        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {0.0f, 0.0f}}, // 20
-        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {1.0f, 0.0f}}, // 21
-        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 1.0f}}, // 22
-        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 1.0f}}, // 23
-    };
-
-    const std::vector<uint16_t> indices = {
-        // Front face
-        0, 1, 2, 2, 3, 0,
-        // Back face
-        4, 5, 6, 6, 7, 4,
-        // Left face
-        8, 9,10,10,11, 8,
-        // Right face
-        12,13,14,14,15,12,
-        // Top face
-        16,17,18,18,19,16,
-        // Bottom face
-        20,21,22,22,23,20
-    };
-}
+//namespace constants
+//{
+//    const std::vector<Vertex> vertices = {
+//        // Front face
+//        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 0.0f}}, // 0
+//        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 0.0f}}, // 1
+//        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 1.0f}}, // 2
+//        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {0.0f, 1.0f}}, // 3
+//
+//        // Back face
+//        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {0.0f, 0.0f}}, // 4
+//        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {1.0f, 0.0f}}, // 5
+//        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {1.0f, 1.0f}}, // 6
+//        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {0.0f, 1.0f}}, // 7
+//
+//        // Left face
+//        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {0.0f, 0.0f}}, // 8
+//        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {1.0f, 0.0f}}, // 9
+//        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {1.0f, 1.0f}}, // 10
+//        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {0.0f, 1.0f}}, // 11
+//
+//        // Right face
+//        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {0.0f, 0.0f}}, // 12
+//        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {1.0f, 0.0f}}, // 13
+//        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {1.0f, 1.0f}}, // 14
+//        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {0.0f, 1.0f}}, // 15
+//
+//        // Top face
+//        {{-0.5f,  0.5f,  0.5f}, {1, 1, 1}, {0.0f, 0.0f}}, // 16
+//        {{ 0.5f,  0.5f,  0.5f}, {0, 0, 1}, {1.0f, 0.0f}}, // 17
+//        {{ 0.5f,  0.5f, -0.5f}, {1, 0, 1}, {1.0f, 1.0f}}, // 18
+//        {{-0.5f,  0.5f, -0.5f}, {0.5, 0.5, 0.5}, {0.0f, 1.0f}}, // 19
+//
+//        // Bottom face
+//        {{-0.5f, -0.5f, -0.5f}, {1, 1, 0}, {0.0f, 0.0f}}, // 20
+//        {{ 0.5f, -0.5f, -0.5f}, {0, 1, 1}, {1.0f, 0.0f}}, // 21
+//        {{ 0.5f, -0.5f,  0.5f}, {0, 1, 0}, {1.0f, 1.0f}}, // 22
+//        {{-0.5f, -0.5f,  0.5f}, {1, 0, 0}, {0.0f, 1.0f}}, // 23
+//    };
+//
+//    const std::vector<uint16_t> indices = {
+//        // Front face
+//        0, 1, 2, 2, 3, 0,
+//        // Back face
+//        4, 5, 6, 6, 7, 4,
+//        // Left face
+//        8, 9,10,10,11, 8,
+//        // Right face
+//        12,13,14,14,15,12,
+//        // Top face
+//        16,17,18,18,19,16,
+//        // Bottom face
+//        20,21,22,22,23,20
+//    };
+//}
 
 
 class Renderer {
@@ -107,7 +107,7 @@ public:
         initWindow();
         initVulkan();
 
-        terrain.CreateTestScene(); 
+        terrain.CreateTestScene(device, physicalDevice, surface, commandPoolTransfer, queueTransfer); 
 
         mainLoop();
         cleanup();
@@ -153,12 +153,6 @@ private:
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
     uint32_t currentFrame = 0;
-
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
 
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
@@ -236,8 +230,6 @@ private:
         createTextureImage(); 
         createTextureImageView(); 
         createTextureSampler(); 
-        createVertexBuffer();
-        createIndexBuffer(); 
         createUniformBuffers();
         createDescriptorPool();
         createDescriptorSets(); 
@@ -340,12 +332,6 @@ private:
         vkDestroyImage(device, textureImage, nullptr);
         vkFreeMemory(device, textureImageMemory, nullptr);
 
-        vkDestroyBuffer(device, vertexBuffer, nullptr);
-        vkFreeMemory(device, vertexBufferMemory, nullptr);
-
-        vkDestroyBuffer(device, indexBuffer, nullptr);
-        vkFreeMemory(device, indexBufferMemory, nullptr);
-
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyBuffer(device, uniformBuffers[i], nullptr);
             vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
@@ -353,7 +339,7 @@ private:
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         
-        terrain.destroyPipelines(device); 
+        terrain.destroyVkResources(device); 
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -610,49 +596,6 @@ private:
         }
     }
 
-    void createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(constants::vertices[0]) * constants::vertices.size();
-
-        // create a staging buffer
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        // copy to staging
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, constants::vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-
-        // create device bufferand copy to buffer
-        createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-        copyBuffer(device, commandPoolTransfer, queueTransfer, stagingBuffer, vertexBuffer, bufferSize);
-
-        // destroy staging buffer
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
-
-    void createIndexBuffer() {
-        VkDeviceSize bufferSize = sizeof(constants::indices[0]) * constants::indices.size();
-
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-
-        void* data;
-        vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, constants::indices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
-
-        createBuffer(device, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-        copyBuffer(device, commandPoolTransfer, queueTransfer, stagingBuffer, indexBuffer, bufferSize);
-
-        vkDestroyBuffer(device, stagingBuffer, nullptr);
-        vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
-
     void createUniformBuffers() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -772,15 +715,13 @@ private:
         renderPassInfo.renderArea.extent = swapChainExtent;
 
         std::array<VkClearValue, 2> clearValues{};
-        clearValues[0].color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+        clearValues[0].color = { {0.509, 0.784, 0.898, 1.0f} };  // sky blue! :3
         clearValues[1].depthStencil = { 1.0f, 0 };
 
         renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
         renderPassInfo.pClearValues = clearValues.data();
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *terrain.currentPipeline);
 
         // update viewport / scissor
         VkViewport viewport{};
@@ -797,16 +738,16 @@ private:
         scissor.extent = swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        // draw some shit
+        // draw
 
-        VkBuffer vertexBuffers[] = { vertexBuffer };
-        VkDeviceSize offsets[] = { 0 };
+        // VkBuffer vertexBuffers[] = { vertexBuffer };
+        // VkDeviceSize offsets[] = { 0 };
+        // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        // vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain.pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+        // terrain.draw(0, 64, 0, 64, commandBuffer, terrain.pipelineLayout);
 
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain.pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-        terrain.draw(0, 64, 0, 64, commandBuffer, terrain.pipelineLayout);
+        terrain.draw(0, 64, 0, 64, commandBuffer, descriptorSets[currentFrame]);
 
         vkCmdEndRenderPass(commandBuffer);
 

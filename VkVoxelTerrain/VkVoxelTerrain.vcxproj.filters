@@ -50,6 +50,12 @@
     <None Include="shaders\shader.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shaders\shader_chunked.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\shader_chunked.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera_fps.h">
@@ -80,6 +86,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vulkan_swapchain.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="chunk_constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -165,10 +165,13 @@ popd</Command>
   <ItemGroup>
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
+    <None Include="shaders\shader_chunked.frag" />
+    <None Include="shaders\shader_chunked.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera_fps.h" />
     <ClInclude Include="chunk.h" />
+    <ClInclude Include="chunk_constants.h" />
     <ClInclude Include="glm_includes.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="smartpointerhelp.h" />

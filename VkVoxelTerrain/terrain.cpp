@@ -41,8 +41,8 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     }
 
     // Shader Modules
-    auto vertShaderCode = readFile("shaders/vert.spv");
-    auto fragShaderCode = readFile("shaders/frag.spv");
+    auto vertShaderCode = readFile("shaders/vert_chunked.spv");
+    auto fragShaderCode = readFile("shaders/frag_chunked.spv");
 
     VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
@@ -136,18 +136,18 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     dynamicState.pDynamicStates = dynamicStates.data();
 
     // Create Pipeline Layout
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // or fragment if needed
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4);
+    //VkPushConstantRange pushConstantRange{};
+    //pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT; // or fragment if needed
+    //pushConstantRange.offset = 0;
+    //pushConstantRange.size = sizeof(glm::mat4);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+    //pipelineLayoutInfo.pushConstantRangeCount = 1;
+    //pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -180,12 +180,18 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     currentPipeline = &pipelinePushConstants; 
 }
 
-void Terrain::destroyPipelines(VkDevice device)
+void Terrain::destroyVkResources(VkDevice device)
 {
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
     vkDestroyPipeline(device, pipelinePushConstants, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+    for (const auto& pair : m_chunks) {
+        const uPtr<Chunk>& chunk = pair.second;
+        vkDestroyBuffer(device, chunk->VertexBuffer, nullptr); 
+        vkFreeMemory(device, chunk->VertexBufferMemory, nullptr); 
+    }
 }
 
 // Combine two 32-bit ints into one 64-bit int
@@ -318,14 +324,25 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
 // TODO: When you make Chunk inherit from Drawable, change this code so
 // it draws each Chunk with the given ShaderProgram, remembering to set the
 // model matrix to the proper X and Z translation!
-void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkPipelineLayout pipelineLayout) {
+void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
     // m_geomCube.clearOffsetBuf();
     // m_geomCube.clearColorBuf();
+
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
 
     for(int x = minX; x < maxX; x += 16) {
         for(int z = minZ; z < maxZ; z += 16) {
             const uPtr<Chunk> &chunk = getChunkAt(x, z);
-            // === draw with push constants
+            
+
+            VkBuffer vertexBuffers[] = { chunk->VertexBuffer };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(cmdBuffer, chunk->VertexBuffer, static_cast<VkDeviceSize>(sizeof(Vertex) * chunk->vertexSize), VK_INDEX_TYPE_UINT32);
+            vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+            vkCmdDrawIndexed(cmdBuffer, chunk->numIndices, 1, 0, 0, 0);
+
+#if 0  // for use when doing "instanced" drawing with push constants
             for(int i = 0; i < 16; ++i) {
                 for(int j = 0; j < 256; ++j) {
                     for(int k = 0; k < 16; ++k) {
@@ -359,21 +376,21 @@ void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBu
                 }
             }
             // ===
+#endif 
         }
     }
 }
 
-void Terrain::CreateTestScene()
+void Terrain::CreateTestScene(VkDevice device, VkPhysicalDevice physicalDevice,
+    VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue)
 {
-    // TODO: DELETE THIS LINE WHEN YOU DELETE m_geomCube!
-    // m_geomCube.createVBOdata();
-
+    std::vector<Chunk*> chunks; 
     // Create the Chunks that will
     // store the blocks for our
     // initial world space
     for(int x = 0; x < 64; x += 16) {
         for(int z = 0; z < 64; z += 16) {
-            instantiateChunkAt(x, z);
+            chunks.push_back(instantiateChunkAt(x, z));
         }
     }
     // Tell our existing terrain set that
@@ -402,5 +419,11 @@ void Terrain::CreateTestScene()
     // Add a central column
     for(int y = 129; y < 140; ++y) {
         setBlockAt(32, y, 32, STONE);
+    }
+
+    // for now, loop over the chunks we created and create VBO data for them
+    for (Chunk* chunk : chunks)
+    {
+        chunk->createVertexData(device, physicalDevice, surface, commandPool, queue); 
     }
 }

@@ -1,5 +1,7 @@
 #include "vulkan_setup.h"
 
+#define USE_DISCRETE_GPU 0
+
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -276,9 +278,14 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(device, &properties);
 
+#if USE_DISCRETE_GPU
     return indices.isComplete() && extensionsSupported &&
-        swapChainAdequate && supportedFeatures.samplerAnisotropy;
-    // && properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        swapChainAdequate && supportedFeatures.samplerAnisotropy
+    && properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+#else
+    return indices.isComplete() && extensionsSupported &&
+        swapChainAdequate && supportedFeatures.samplerAnisotropy; 
+#endif
 }
 
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {

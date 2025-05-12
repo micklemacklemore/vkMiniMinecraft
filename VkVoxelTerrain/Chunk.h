@@ -1,6 +1,10 @@
 #pragma once
+#include "globals.h"
 #include "smartpointerhelp.h"
 #include "glm_includes.h"
+#include "types.h"
+
+#include <cstdint>
 #include <array>
 #include <unordered_map>
 #include <cstddef>
@@ -51,15 +55,23 @@ private:
     // These allow us to properly determine
     std::unordered_map<Direction, Chunk*, EnumHash> m_neighbors;
 
+    void createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice, 
+        VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue, 
+        const std::vector<Vertex>& vertex, const std::vector<uint32_t>& idx);
 public:
+    // Contains both vertex and index data
+    VkBuffer VertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory VertexBufferMemory = VK_NULL_HANDLE;
+    int numIndices;
+    int vertexSize; 
+    VkDeviceSize bufferSize; 
+
     Chunk() = delete;
     Chunk(int x, int z);
     BlockType getBlockAt(unsigned int x, unsigned int y, unsigned int z) const;
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
-
-    void drawPushConstants(); 
-    void drawInstanced(); 
-    void drawChunked(); 
+    void createVertexData(VkDevice device, VkPhysicalDevice physicalDevice,
+        VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue);
 };
