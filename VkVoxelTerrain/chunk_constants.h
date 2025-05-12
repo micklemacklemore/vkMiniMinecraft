@@ -52,20 +52,44 @@ namespace ChunkConstants {
         glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)
     };
 
+    enum FaceType {
+        TOP,
+        BOTTOM,
+        SIDE
+    };
+
     // for use in createVBOdata()
     struct BlockFace {
+        FaceType faceType;
         glm::ivec3 direction;
         std::array<glm::vec4, ChunkConstants::VERT_COUNT> pos;
         glm::vec4 nor;
     };
 
+    std::array<glm::vec2, 4> UV = {
+        glm::vec2(1, 0),
+        glm::vec2(1, 1),
+        glm::vec2(0, 1),
+        glm::vec2(0, 0)
+        
+    };
+
+    struct BlockFaceKey {
+        BlockType blockType;
+        FaceType faceType;
+
+        bool operator==(const BlockFaceKey& other) const {
+            return blockType == other.blockType && faceType == other.faceType;
+        }
+    };
+
     const static std::array<BlockFace, 6> neighbouringFaces = { {
-        { glm::ivec3(1, 0, 0), ChunkConstants::RightFace,  glm::vec4(1,0,0,0) },                   // xpos  right face
-        { glm::ivec3(-1, 0, 0), ChunkConstants::LeftFace,   glm::vec4(-1,0,0,0)  },                 // xneg  left face
-        { glm::ivec3(0,  1, 0), ChunkConstants::TopFace,    glm::vec4(0,1,0,0) },                   // ypos  top face
-        { glm::ivec3(0, -1, 0), ChunkConstants::BottomFace, glm::vec4(0,-1,0,0)  },                 // yneg  bottom face
-        { glm::ivec3(0, 0,  1), ChunkConstants::FrontFace,  glm::vec4(0,0,1,0) },                   // zpos  front face
-        { glm::ivec3(0, 0, -1), ChunkConstants::BackFace,   glm::vec4(0,0,-1,0)  }                  // zneg  back face
+        { SIDE, glm::ivec3(1, 0, 0),  ChunkConstants::RightFace,  glm::vec4(1,0,0,0) },                   // xpos  right face
+        { SIDE, glm::ivec3(-1, 0, 0), ChunkConstants::LeftFace,   glm::vec4(-1,0,0,0)  },                 // xneg  left face
+        { TOP, glm::ivec3(0,  1, 0), ChunkConstants::TopFace,    glm::vec4(0,1,0,0) },                   // ypos  top face
+        { BOTTOM, glm::ivec3(0, -1, 0), ChunkConstants::BottomFace, glm::vec4(0,-1,0,0)  },                 // yneg  bottom face
+        { SIDE, glm::ivec3(0, 0,  1), ChunkConstants::FrontFace,  glm::vec4(0,0,1,0) },                   // zpos  front face
+        { SIDE, glm::ivec3(0, 0, -1), ChunkConstants::BackFace,   glm::vec4(0,0,-1,0)  }                  // zneg  back face
     } };
 
     const static std::unordered_map<BlockType, glm::vec4> blocktype_to_color{
@@ -82,3 +106,29 @@ namespace ChunkConstants {
     };
 
 } // namespace constants
+
+namespace std {
+    template <>
+    struct hash<ChunkConstants::BlockFaceKey> {
+        std::size_t operator()(const ChunkConstants::BlockFaceKey& k) const {
+            return std::hash<int>()(static_cast<int>(k.blockType)) ^ (std::hash<int>()(static_cast<int>(k.faceType)) << 1);
+        }
+    };
+}
+
+
+namespace ChunkConstants {
+    const static std::unordered_map<BlockFaceKey, glm::vec2> block_face_uv_offset = {
+        {{GRASS, TOP},    glm::vec2(8, 2)},
+        {{GRASS, SIDE},   glm::vec2(3, 0)},
+        {{GRASS, BOTTOM}, glm::vec2(2, 0)},
+
+        {{DIRT, TOP},    glm::vec2(2, 0)},
+        {{DIRT, SIDE},   glm::vec2(2, 0)},
+        {{DIRT, BOTTOM}, glm::vec2(2, 0)},
+
+        {{STONE, TOP},    glm::vec2(1, 0)},
+        {{STONE, SIDE},   glm::vec2(1, 0)},
+        {{STONE, BOTTOM}, glm::vec2(1, 0)}
+    };
+}

@@ -92,6 +92,7 @@ void Chunk::createVertexData(VkDevice device, VkPhysicalDevice physicalDevice,
                                 vtx.pos = glm::vec3(minX + x, y, minZ + z) + glm::vec3(n.pos[i]);
                                 vtx.nor = n.nor; 
                                 vtx.color = ChunkConstants::blocktype_to_color.at(current);
+                                vtx.texCoord = (ChunkConstants::UV.at(i) + ChunkConstants::block_face_uv_offset.at({ current, n.faceType })) / 16.f;
                                 faceIndices.at(i) = idxCounter++;
                                 vertexData.push_back(vtx); 
                             }

@@ -15,7 +15,7 @@ CameraFPS::CameraFPS(uint32_t width, uint32_t height, glm::vec3 pos)
     mAspect(width / static_cast<float>(height)),
     mYaw(-90.f),
     mPitch(0.0f),
-    mMovementSpeed(5.f),
+    mMovementSpeed(10.f),
     mMouseSensitivity(0.1f) {
 }
 

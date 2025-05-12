@@ -402,18 +402,18 @@ void Terrain::CreateTestScene(VkDevice device, VkPhysicalDevice physicalDevice,
     for(int x = 0; x < 64; ++x) {
         for(int z = 0; z < 64; ++z) {
             if((x + z) % 2 == 0) {
-                setBlockAt(x, 128, z, STONE);
+                setBlockAt(x, 128, z, GRASS);
             }
             else {
-                setBlockAt(x, 128, z, DIRT);
+                setBlockAt(x, 128, z, STONE);
             }
         }
     }
     // Add "walls" for collision testing
     for(int x = 0; x < 64; ++x) {
-        setBlockAt(x, 129, 0, GRASS);
+        setBlockAt(x, 129, 0, DIRT);
         setBlockAt(x, 130, 0, GRASS);
-        setBlockAt(x, 129, 63, GRASS);
+        setBlockAt(x, 129, 63, DIRT);
         setBlockAt(0, 130, x, GRASS);
     }
     // Add a central column
