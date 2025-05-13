@@ -1,3 +1,5 @@
+!VkVoxelTerrain/external/**/*
+
 ##### Windows
 # Windows thumbnail cache files
 Thumbs.db
@@ -1042,3 +1044,5 @@ dkms.conf
 *.uf2
 # Raspberry Pi Pico disassembler file
 *.dis
+
+
