@@ -1,4 +1,8 @@
-# TODO
+# TODO (vkMiniMinecraft)
+
+### Progress Video 1
+
+https://github.com/user-attachments/assets/70e80763-3f1c-4eee-a231-5f5287349a77
 
 So far I've implemented a simple chunking system (minecraft blocks are grouped as 16x16 "chunks" which own their own VkBuffers) and textures. Below is an outline of the features I want to have as a starting point. Then I'll move on to some more advanced features. 
 
