@@ -155,6 +155,13 @@ popd</Command>
   <ItemGroup>
     <ClCompile Include="camera_fps.cpp" />
     <ClCompile Include="chunk.cpp" />
+    <ClCompile Include="external\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="external\imgui\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="external\imgui\imgui.cpp" />
+    <ClCompile Include="external\imgui\imgui_demo.cpp" />
+    <ClCompile Include="external\imgui\imgui_draw.cpp" />
+    <ClCompile Include="external\imgui\imgui_tables.cpp" />
+    <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="terrain.cpp" />
@@ -163,6 +170,7 @@ popd</Command>
     <ClCompile Include="vulkan_swapchain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="external\imgui\misc\debuggers\imgui.natstepfilter" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
     <None Include="shaders\shader_chunked.frag" />
@@ -172,6 +180,14 @@ popd</Command>
     <ClInclude Include="camera_fps.h" />
     <ClInclude Include="chunk.h" />
     <ClInclude Include="chunk_constants.h" />
+    <ClInclude Include="external\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="external\imgui\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="external\imgui\imconfig.h" />
+    <ClInclude Include="external\imgui\imgui.h" />
+    <ClInclude Include="external\imgui\imgui_internal.h" />
+    <ClInclude Include="external\imgui\imstb_rectpack.h" />
+    <ClInclude Include="external\imgui\imstb_textedit.h" />
+    <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="glm_includes.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="smartpointerhelp.h" />
@@ -180,6 +196,9 @@ popd</Command>
     <ClInclude Include="vulkan_resources.h" />
     <ClInclude Include="vulkan_setup.h" />
     <ClInclude Include="vulkan_swapchain.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="external\imgui\misc\debuggers\imgui.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

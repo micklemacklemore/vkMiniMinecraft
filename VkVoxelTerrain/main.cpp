@@ -6,6 +6,19 @@
 #include "vulkan_resources.h" 
 #include "terrain.h"
 
+#include "external/imgui/imgui.h"
+#include "external/imgui/backends/imgui_impl_vulkan.h"
+#include "external/imgui/backends/imgui_impl_glfw.h"
+
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+    if (err < 0)
+        abort();
+}
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -106,7 +119,9 @@ public:
     void run() {
         initWindow();
         initVulkan();
+        initImGui(); 
 
+        // test minecraft scene
         terrain.CreateTestScene(device, physicalDevice, surface, commandPoolTransfer, queueTransfer); 
 
         mainLoop();
@@ -167,6 +182,34 @@ private:
 
     CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(64., 135., 64.) };
     Terrain terrain; 
+
+    void initImGui() {
+        // initialize imgui
+        ImGui::CreateContext();
+
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = instance;
+        init_info.PhysicalDevice = physicalDevice;
+        init_info.Device = device;
+        init_info.QueueFamily = indices.graphicsFamily.value();
+        init_info.Queue = queueGraphics;
+        init_info.DescriptorPoolSize = 2; 
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.UseDynamicRendering = false; 
+        init_info.RenderPass = renderPass; 
+        // init_info.PipelineCache = YOUR_PIPELINE_CACHE;
+        // init_info.DescriptorPool = YOUR_DESCRIPT;
+        init_info.Subpass = 0;
+        init_info.MinImageCount = 2;
+        init_info.ImageCount = swapChainImages.size();
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.CheckVkResultFn = check_vk_result;
+
+        ImGui_ImplVulkan_Init(&init_info);
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+    }
 
     void initWindow() {
         glfwInit();
@@ -247,10 +290,45 @@ private:
             processInput(window, deltaTime); 
 
             glfwPollEvents();
+
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            createGUIOverlay(); 
+
             drawFrame();
         }
 
         vkDeviceWaitIdle(device);
+    }
+
+    void createGUIOverlay() {
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+        const float PAD = 10.0f;
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+        ImVec2 work_size = viewport->WorkSize;
+        ImVec2 window_pos, window_pos_pivot;
+        window_pos.x = (work_pos.x + PAD);
+        window_pos.y = (work_pos.y + PAD);
+        window_pos_pivot.x = 0.0f;
+        window_pos_pivot.y = 0.0f;
+        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+        window_flags |= ImGuiWindowFlags_NoMove;
+
+        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        if (ImGui::Begin("Example: Simple overlay", (bool *)0, window_flags))
+        {
+            ImGui::Text("Simple overlay");
+            ImGui::Separator();
+            if (ImGui::IsMousePosValid())
+                ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
+            else
+                ImGui::Text("Mouse Position: <invalid>");
+        }
+        ImGui::End();
     }
 
     void processInput(GLFWwindow* window, float delta)
@@ -325,6 +403,10 @@ private:
 
     void cleanup() {
         cleanupSwapChain();
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
 
         vkDestroySampler(device, textureSampler, nullptr);
         vkDestroyImageView(device, textureImageView, nullptr);
@@ -748,6 +830,9 @@ private:
         // terrain.draw(0, 64, 0, 64, commandBuffer, terrain.pipelineLayout);
 
         terrain.draw(0, 64, 0, 64, commandBuffer, descriptorSets[currentFrame]);
+
+        ImGui::Render();
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
         vkCmdEndRenderPass(commandBuffer);
 
