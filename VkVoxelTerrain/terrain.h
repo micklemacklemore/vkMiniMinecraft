@@ -3,6 +3,7 @@
 #include "smartpointerhelp.h"
 #include "glm_includes.h"
 #include "chunk.h"
+#include "threadpool.h"
 
 #include <array>
 #include <unordered_map>
@@ -12,11 +13,14 @@
 int64_t toKey(int x, int z);
 glm::ivec2 toCoords(int64_t k);
 
+class Renderer; 
+
 // The container class for all of the Chunks in the game.
 // Ultimately, while Terrain will always store all Chunks,
 // not all Chunks will be drawn at any given time as the world
 // expands.
 class Terrain {
+    friend Renderer; 
 private:
     // Stores every Chunk according to the location of its lower-left corner
     // in world space.
@@ -24,6 +28,7 @@ private:
     // so that we can use them as a key for the map, as objects like std::pairs or
     // glm::ivec2s are not hashable by default, so they cannot be used as keys.
     std::unordered_map<int64_t, uPtr<Chunk>> m_chunks;
+    std::mutex m_chunks_mutex; 
 
     // We will designate every 64 x 64 area of the world's x-z plane
     // as one "terrain generation zone". Every time the player moves
@@ -39,8 +44,10 @@ private:
     // surrounding the Player should be rendered, the Chunks
     // in the Terrain will never be deleted until the program is terminated.
     std::unordered_set<int64_t> m_generatedTerrain;
-    VkPipeline pipelinePushConstants;
     VkPipeline pipelineChunks;
+    ThreadPool threadPool; 
+    std::vector<Chunk*> pendingChunks; 
+    std::mutex pendingChunksMutex; 
 public:
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
@@ -50,7 +57,7 @@ public:
     ~Terrain();
 
     void buildPipelines(VkDevice device, VkRenderPass renderpass);
-    void destroyVkResources(VkDevice device); 
+    void destroyResources(VkDevice device); 
 
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.
@@ -58,29 +65,25 @@ public:
     Chunk* instantiateChunkAt(int x, int z);
     // Do these world-space coordinates lie within
     // a Chunk that exists?
-    bool hasChunkAt(int x, int z) const;
+    bool hasChunkAt(int x, int z);
     // Assuming a Chunk exists at these coords,
     // return a mutable reference to it
     uPtr<Chunk>& getChunkAt(int x, int z);
-    // Assuming a Chunk exists at these coords,
-    // return a const reference to it
-    const uPtr<Chunk>& getChunkAt(int x, int z) const;
     // Given a world-space coordinate (which may have negative
     // values) return the block stored at that point in space.
-    BlockType getBlockAt(int x, int y, int z) const;
-    BlockType getBlockAt(glm::vec3 p) const;
+    BlockType getBlockAt(int x, int y, int z);
     // Given a world-space coordinate (which may have negative
     // values) set the block at that point in space to the
     // given type.
     void setBlockAt(int x, int y, int z, BlockType t);
 
+    void tryExpansion(const glm::vec3& pos); 
+
+    void threadCreateBlockData(glm::vec2 terrainCoord); 
+    void threadCreateBufferData(); 
+
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided
     // ShaderProgram
-    void draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet);
-
-    // Initializes the Chunks that store the 64 x 256 x 64 block scene you
-    // see when the base code is run.
-    void CreateTestScene(VkDevice device, VkPhysicalDevice physicalDevice,
-        VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue);
+    void draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet);
 };

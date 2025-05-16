@@ -142,6 +142,9 @@
     <ClInclude Include="external\imgui\backends\imgui_impl_vulkan.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="threadpool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="external\imgui\misc\debuggers\imgui.natvis">

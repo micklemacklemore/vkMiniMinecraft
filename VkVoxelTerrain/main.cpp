@@ -120,10 +120,6 @@ public:
         initWindow();
         initVulkan();
         initImGui(); 
-
-        // test minecraft scene
-        terrain.CreateTestScene(device, physicalDevice, surface, commandPoolTransfer, queueTransfer); 
-
         mainLoop();
         cleanup();
     }
@@ -180,7 +176,7 @@ private:
 
     bool framebufferResized = false;
 
-    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(64., 135., 64.) };
+    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(32., 150., 32.) };
     Terrain terrain; 
 
     void initImGui() {
@@ -200,7 +196,6 @@ private:
         init_info.UseDynamicRendering = false; 
         init_info.RenderPass = renderPass; 
         // init_info.PipelineCache = YOUR_PIPELINE_CACHE;
-        // init_info.DescriptorPool = YOUR_DESCRIPT;
         init_info.Subpass = 0;
         init_info.MinImageCount = 2;
         init_info.ImageCount = swapChainImages.size();
@@ -288,8 +283,9 @@ private:
             lastFrame = currentFrame;
 
             processInput(window, deltaTime); 
-
             glfwPollEvents();
+
+            terrain.tryExpansion(camera.getPosition()); 
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -318,15 +314,20 @@ private:
         ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
         window_flags |= ImGuiWindowFlags_NoMove;
 
-        ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
-        if (ImGui::Begin("Example: Simple overlay", (bool *)0, window_flags))
+        ImGui::SetNextWindowBgAlpha(0.9f); // Transparent background
+        if (ImGui::Begin("Overlay", nullptr, window_flags))
         {
-            ImGui::Text("Simple overlay");
+            ImGui::Text("vkMiniMinecraft\n" "by Michael Mason");
             ImGui::Separator();
-            if (ImGui::IsMousePosValid())
-                ImGui::Text("Mouse Position: (%.1f,%.1f)", io.MousePos.x, io.MousePos.y);
-            else
-                ImGui::Text("Mouse Position: <invalid>");
+            glm::vec3 campos = camera.getPosition();
+            ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", campos.x, campos.y, campos.z);
+            
+            int counter = 1; 
+            for (const auto& chunkID : terrain.m_generatedTerrain) {
+                glm::ivec2 coords = toCoords(chunkID); 
+                ImGui::Text("%d: (%d, %d)", counter, coords.x, coords.y);
+                ++counter; 
+            }
         }
         ImGui::End();
     }
@@ -421,7 +422,7 @@ private:
 
         vkDestroyDescriptorPool(device, descriptorPool, nullptr);
         
-        terrain.destroyVkResources(device); 
+        terrain.destroyResources(device);
 
         vkDestroyRenderPass(device, renderPass, nullptr);
 
@@ -822,14 +823,7 @@ private:
 
         // draw
 
-        // VkBuffer vertexBuffers[] = { vertexBuffer };
-        // VkDeviceSize offsets[] = { 0 };
-        // vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        // vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-        // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain.pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-        // terrain.draw(0, 64, 0, 64, commandBuffer, terrain.pipelineLayout);
-
-        terrain.draw(0, 64, 0, 64, commandBuffer, descriptorSets[currentFrame]);
+        terrain.draw(camera.getPosition(), commandBuffer, descriptorSets[currentFrame]);
 
         ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

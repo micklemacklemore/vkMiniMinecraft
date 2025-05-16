@@ -24,6 +24,7 @@ public:
     // constructors
     CameraFPS(uint32_t width, uint32_t height, glm::vec3 pos);
 
+    const glm::vec3&   getPosition() { return mPosition; }
     void        setCameraWidthHeight(uint32_t w, uint32_t h);
     glm::mat4   getViewProjectionMatrix();
     void        processInput(Input input, float dt);

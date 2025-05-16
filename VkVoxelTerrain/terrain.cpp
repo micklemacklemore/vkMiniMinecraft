@@ -1,12 +1,32 @@
 #include "terrain.h"
 #include "vulkan_setup.h"
 #include "types.h"
-// #include "cube.h"
 #include <stdexcept>
 #include <iostream>
+#include <sstream>
+#include <thread>
+#include <mutex>
+
+// a "zone" is a 4*4 area of chunks
+#define TERRAIN_DRAW_MULTIPLIER 1       // (1) 3x3 draw zone radius
+#define TERRAIN_CREATE_MULTIPLIER 2    // (2) 5x5 create zone radius
+#define ZONE_SIZE 64
+
+#define TERRAIN_DRAW_RADIUS         ZONE_SIZE * TERRAIN_DRAW_MULTIPLIER
+#define TERRAIN_CREATE_RADIUS       ZONE_SIZE * TERRAIN_CREATE_MULTIPLIER
+
+int roundDown(int n, int m) {
+    return n >= 0 ? (n / m) * m : ((n - m + 1) / m) * m;
+}
+
+// Chunks: 16 by 256 by 16
+// Creation Zone: 2 * (64 x 256 x 64) ==> 8x8 Chunks
+// Draw Zone: 4x4 Chunks
 
 Terrain::Terrain()
-    : m_chunks(), m_generatedTerrain()
+    : m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE), 
+    descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
+    threadPool(std::thread::hardware_concurrency()), pendingChunks(), pendingChunksMutex()
 {}
 
 Terrain::~Terrain() {
@@ -170,28 +190,68 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelinePushConstants) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelineChunks) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
-    currentPipeline = &pipelinePushConstants; 
+    currentPipeline = &pipelineChunks;
 }
 
-void Terrain::destroyVkResources(VkDevice device)
+void Terrain::destroyResources(VkDevice device)
 {
+    threadPool.destroy();
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 
-    vkDestroyPipeline(device, pipelinePushConstants, nullptr);
+    vkDestroyPipeline(device, pipelineChunks, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
     for (const auto& pair : m_chunks) {
         const uPtr<Chunk>& chunk = pair.second;
-        vkDestroyBuffer(device, chunk->VertexBuffer, nullptr); 
-        vkFreeMemory(device, chunk->VertexBufferMemory, nullptr); 
+        if (chunk)
+        {
+            vkDestroyBuffer(device, chunk->VertexBuffer, nullptr);
+            vkFreeMemory(device, chunk->VertexBufferMemory, nullptr);
+        }
     }
+}
+
+// Surround calls to this with try-catch if you don't know whether
+// the coordinates at x, y, z have a corresponding Chunk
+BlockType Terrain::getBlockAt(int x, int y, int z)
+{
+    if (hasChunkAt(x, z)) {
+        // Just disallow action below or above min/max height,
+        // but don't crash the game over it.
+        if (y < 0 || y >= 256) {
+            return EMPTY;
+        }
+        const uPtr<Chunk>& c = getChunkAt(x, z);
+        glm::vec2 chunkOrigin = glm::vec2(floor(x / 16.f) * 16, floor(z / 16.f) * 16);
+        return c->getBlockAt(static_cast<unsigned int>(x - chunkOrigin.x),
+            static_cast<unsigned int>(y),
+            static_cast<unsigned int>(z - chunkOrigin.y));
+    }
+    else {
+        throw std::out_of_range("Coordinates " + std::to_string(x) +
+            " " + std::to_string(y) + " " +
+            std::to_string(z) + " have no Chunk!");
+    }
+}
+
+bool Terrain::hasChunkAt(int x, int z) {
+    // Map x and z to their nearest Chunk corner
+    // By flooring x and z, then multiplying by 16,
+    // we clamp (x, z) to its nearest Chunk-space corner,
+    // then scale back to a world-space location.
+    // Note that floor() lets us handle negative numbers
+    // correctly, as floor(-1 / 16.f) gives us -1, as
+    // opposed to (int)(-1 / 16.f) giving us 0 (incorrect!).
+    int xFloor = static_cast<int>(glm::floor(x / 16.f));
+    int zFloor = static_cast<int>(glm::floor(z / 16.f));
+    return m_chunks.find(toKey(16 * xFloor, 16 * zFloor)) != m_chunks.end();
 }
 
 // Combine two 32-bit ints into one 64-bit int
@@ -226,62 +286,16 @@ glm::ivec2 toCoords(int64_t k) {
     return glm::ivec2(x, z);
 }
 
-// Surround calls to this with try-catch if you don't know whether
-// the coordinates at x, y, z have a corresponding Chunk
-BlockType Terrain::getBlockAt(int x, int y, int z) const
-{
-    if(hasChunkAt(x, z)) {
-        // Just disallow action below or above min/max height,
-        // but don't crash the game over it.
-        if(y < 0 || y >= 256) {
-            return EMPTY;
-        }
-        const uPtr<Chunk> &c = getChunkAt(x, z);
-        glm::vec2 chunkOrigin = glm::vec2(floor(x / 16.f) * 16, floor(z / 16.f) * 16);
-        return c->getBlockAt(static_cast<unsigned int>(x - chunkOrigin.x),
-                             static_cast<unsigned int>(y),
-                             static_cast<unsigned int>(z - chunkOrigin.y));
-    }
-    else {
-        throw std::out_of_range("Coordinates " + std::to_string(x) +
-                                " " + std::to_string(y) + " " +
-                                std::to_string(z) + " have no Chunk!");
-    }
-}
-
-BlockType Terrain::getBlockAt(glm::vec3 p) const {
-    return getBlockAt(p.x, p.y, p.z);
-}
-
-bool Terrain::hasChunkAt(int x, int z) const {
-    // Map x and z to their nearest Chunk corner
-    // By flooring x and z, then multiplying by 16,
-    // we clamp (x, z) to its nearest Chunk-space corner,
-    // then scale back to a world-space location.
-    // Note that floor() lets us handle negative numbers
-    // correctly, as floor(-1 / 16.f) gives us -1, as
-    // opposed to (int)(-1 / 16.f) giving us 0 (incorrect!).
-    int xFloor = static_cast<int>(glm::floor(x / 16.f));
-    int zFloor = static_cast<int>(glm::floor(z / 16.f));
-    return m_chunks.find(toKey(16 * xFloor, 16 * zFloor)) != m_chunks.end();
-}
-
-
 uPtr<Chunk>& Terrain::getChunkAt(int x, int z) {
     int xFloor = static_cast<int>(glm::floor(x / 16.f));
     int zFloor = static_cast<int>(glm::floor(z / 16.f));
+    std::lock_guard<std::mutex> lock{ m_chunks_mutex }; 
     return m_chunks[toKey(16 * xFloor, 16 * zFloor)];
-}
-
-
-const uPtr<Chunk>& Terrain::getChunkAt(int x, int z) const {
-    int xFloor = static_cast<int>(glm::floor(x / 16.f));
-    int zFloor = static_cast<int>(glm::floor(z / 16.f));
-    return m_chunks.at(toKey(16 * xFloor, 16 * zFloor));
 }
 
 void Terrain::setBlockAt(int x, int y, int z, BlockType t)
 {
+    std::lock_guard<std::mutex> lock{ m_chunks_mutex };
     if(hasChunkAt(x, z)) {
         uPtr<Chunk> &c = getChunkAt(x, z);
         glm::vec2 chunkOrigin = glm::vec2(floor(x / 16.f) * 16, floor(z / 16.f) * 16);
@@ -297,10 +311,56 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
+void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
+{
+    /*std::stringstream s; 
+    s << glm::to_string(terrainCoord) << std::endl;
+    std::cout << s.str();*/
+
+    for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z++) {
+        for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x++) {
+            Chunk* chunk = instantiateChunkAt(terrainCoord[0] + x, terrainCoord[1] + z);
+
+            // flat terrain
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    chunk->setBlockAt(x, 128, z, GRASS);
+                }
+            }
+
+            std::lock_guard<std::mutex> lock(pendingChunksMutex);
+            pendingChunks.push_back(chunk); 
+        }
+    }
+}
+
+void Terrain::tryExpansion(const glm::vec3& pos)
+{
+    int terrainX = roundDown(pos.x, ZONE_SIZE); 
+    int terrainZ = roundDown(pos.z, ZONE_SIZE); 
+
+    // the "create radius" are the collection of zones around the player with generated block data
+    // the "draw radius" are the zones that are actually drawn to screen, which must be <= the create radius
+
+    // check "create" radius around player, and spawn threads for zones without block data
+    for (int z = terrainZ - TERRAIN_CREATE_RADIUS; z <= terrainZ + TERRAIN_CREATE_RADIUS; z += ZONE_SIZE) {
+        for (int x = terrainX - TERRAIN_CREATE_RADIUS; x <= terrainX + TERRAIN_CREATE_RADIUS; x += ZONE_SIZE) {       // loop through each zone
+            if (m_generatedTerrain.count(toKey(x, z)) == 0)
+            {
+                m_generatedTerrain.insert(toKey(x, z));
+                threadPool.enqueue(&Terrain::threadCreateBlockData, this, glm::vec2(x, z));
+            }
+        }
+    }
+
+    // if (!blockDataThreads.empty()) std::cout << "=======" << std::endl; 
+}
+
 Chunk* Terrain::instantiateChunkAt(int x, int z) {
     uPtr<Chunk> chunk = mkU<Chunk>(x, z);
     Chunk *cPtr = chunk.get();
-    m_chunks[toKey(x, z)] = move(chunk);
+    std::lock_guard<std::mutex> lock{ m_chunks_mutex }; 
+    m_chunks[toKey(x, z)] = move(chunk); 
     // Set the neighbor pointers of itself and its neighbors
     if(hasChunkAt(x, z + 16)) {
         auto &chunkNorth = m_chunks[toKey(x, z + 16)];
@@ -324,106 +384,31 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
 // TODO: When you make Chunk inherit from Drawable, change this code so
 // it draws each Chunk with the given ShaderProgram, remembering to set the
 // model matrix to the proper X and Z translation!
-void Terrain::draw(int minX, int maxX, int minZ, int maxZ, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
+void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
     // m_geomCube.clearOffsetBuf();
     // m_geomCube.clearColorBuf();
 
+    // int tx = roundDown(position.x, ZONE_SIZE);
+    // int tz = roundDown(position.z, ZONE_SIZE);
+    int tx = 0; 
+    int tz = 0; 
+
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
 
-    for(int x = minX; x < maxX; x += 16) {
-        for(int z = minZ; z < maxZ; z += 16) {
-            const uPtr<Chunk> &chunk = getChunkAt(x, z);
-            
+    int radius = 2; // zone radius around player
+    for (int z = tz - (radius * ZONE_SIZE); z <= tz + (radius * ZONE_SIZE); z += 16) {
+        for (int x = tx - (radius * ZONE_SIZE); x <= tz + (radius * ZONE_SIZE); x += 16) {
+            const uPtr<Chunk>& chunk = getChunkAt(x, z);
+            if (chunk && chunk->VertexBuffer != VK_NULL_HANDLE) {
+                VkBuffer vertexBuffers[] = { chunk->VertexBuffer };
+                VkDeviceSize offsets[] = { 0 };
+                vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+                vkCmdBindIndexBuffer(cmdBuffer, chunk->VertexBuffer, static_cast<VkDeviceSize>(sizeof(Vertex) * chunk->vertexSize), VK_INDEX_TYPE_UINT32);
+                vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+                vkCmdDrawIndexed(cmdBuffer, chunk->numIndices, 1, 0, 0, 0);
 
-            VkBuffer vertexBuffers[] = { chunk->VertexBuffer };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(cmdBuffer, chunk->VertexBuffer, static_cast<VkDeviceSize>(sizeof(Vertex) * chunk->vertexSize), VK_INDEX_TYPE_UINT32);
-            vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-            vkCmdDrawIndexed(cmdBuffer, chunk->numIndices, 1, 0, 0, 0);
-
-#if 0  // for use when doing "instanced" drawing with push constants
-            for(int i = 0; i < 16; ++i) {
-                for(int j = 0; j < 256; ++j) {
-                    for(int k = 0; k < 16; ++k) {
-                        BlockType t = chunk->getBlockAt(i, j, k);
-
-                        glm::mat4 pc; 
-
-                        if(t != EMPTY) {
-                            pc[0] = glm::vec4(i+x, j, k+z, 1.);
-                            switch(t) {
-                            case GRASS:
-                                pc[1] = glm::vec4(95.f, 159.f, 53.f, 255.f) / 255.f;
-                                break;
-                            case DIRT:
-                                pc[1] = glm::vec4(121.f, 85.f, 58.f, 255.f) / 255.f;
-                                break;
-                            case STONE:
-                                pc[1] = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-                                break;
-                            case WATER:
-                                pc[1] = glm::vec4(0.f, 0.f, 0.75f, 1.0f);
-                                break;
-                            default:
-                                pc[1] = glm::vec4(1.f, 0.f, 1.f, 1.0f); // Debug purple
-                                break;
-                            }
-                            vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pc);
-                            vkCmdDrawIndexed(cmdBuffer, 36, 1, 0, 0, 0);   
-                        }
-                    }
-                }
             }
-            // ===
-#endif 
         }
     }
 }
 
-void Terrain::CreateTestScene(VkDevice device, VkPhysicalDevice physicalDevice,
-    VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue)
-{
-    std::vector<Chunk*> chunks; 
-    // Create the Chunks that will
-    // store the blocks for our
-    // initial world space
-    for(int x = 0; x < 64; x += 16) {
-        for(int z = 0; z < 64; z += 16) {
-            chunks.push_back(instantiateChunkAt(x, z));
-        }
-    }
-    // Tell our existing terrain set that
-    // the "generated terrain zone" at (0,0)
-    // now exists.
-    m_generatedTerrain.insert(toKey(0, 0));
-
-    // Create the basic terrain floor
-    for(int x = 0; x < 64; ++x) {
-        for(int z = 0; z < 64; ++z) {
-            if((x + z) % 2 == 0) {
-                setBlockAt(x, 128, z, GRASS);
-            }
-            else {
-                setBlockAt(x, 128, z, STONE);
-            }
-        }
-    }
-    // Add "walls" for collision testing
-    for(int x = 0; x < 64; ++x) {
-        setBlockAt(x, 129, 0, DIRT);
-        setBlockAt(x, 130, 0, GRASS);
-        setBlockAt(x, 129, 63, DIRT);
-        setBlockAt(0, 130, x, GRASS);
-    }
-    // Add a central column
-    for(int y = 129; y < 140; ++y) {
-        setBlockAt(32, y, 32, STONE);
-    }
-
-    // for now, loop over the chunks we created and create VBO data for them
-    for (Chunk* chunk : chunks)
-    {
-        chunk->createVertexData(device, physicalDevice, surface, commandPool, queue); 
-    }
-}

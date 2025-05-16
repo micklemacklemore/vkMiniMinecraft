@@ -192,6 +192,7 @@ popd</Command>
     <ClInclude Include="globals.h" />
     <ClInclude Include="smartpointerhelp.h" />
     <ClInclude Include="terrain.h" />
+    <ClInclude Include="threadpool.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="vulkan_resources.h" />
     <ClInclude Include="vulkan_setup.h" />
