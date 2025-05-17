@@ -80,7 +80,7 @@ public:
     void tryExpansion(const glm::vec3& pos); 
 
     void threadCreateBlockData(glm::vec2 terrainCoord); 
-    void threadCreateBufferData(); 
+    void threadCreateBufferData(Chunk* chunk); 
 
     // Draws every Chunk that falls within the bounding box
     // described by the min and max coords, using the provided

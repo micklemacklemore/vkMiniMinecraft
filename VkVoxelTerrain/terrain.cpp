@@ -24,7 +24,7 @@ int roundDown(int n, int m) {
 // Draw Zone: 4x4 Chunks
 
 Terrain::Terrain()
-    : m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE), 
+    : m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
     descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
     threadPool(std::thread::hardware_concurrency()), pendingChunks(), pendingChunksMutex()
 {}
@@ -334,6 +334,11 @@ void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
     }
 }
 
+void Terrain::threadCreateBufferData(Chunk* chunk)
+{
+    // chunk->createVertexData(); 
+}
+
 void Terrain::tryExpansion(const glm::vec3& pos)
 {
     int terrainX = roundDown(pos.x, ZONE_SIZE); 
@@ -353,7 +358,16 @@ void Terrain::tryExpansion(const glm::vec3& pos)
         }
     }
 
-    // if (!blockDataThreads.empty()) std::cout << "=======" << std::endl; 
+    std::vector<Chunk*> chunksToProcess;
+
+    {
+        std::lock_guard<std::mutex> lock(pendingChunksMutex);
+        chunksToProcess.swap(pendingChunks); // Efficient: avoids copying
+    }
+
+    for (Chunk* chunk : chunksToProcess) {
+        // threadPool.enqueue(&Terrain::threadCreateBufferData, this, chunk);
+    }
 }
 
 Chunk* Terrain::instantiateChunkAt(int x, int z) {
@@ -395,9 +409,8 @@ void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescr
 
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
 
-    int radius = 2; // zone radius around player
-    for (int z = tz - (radius * ZONE_SIZE); z <= tz + (radius * ZONE_SIZE); z += 16) {
-        for (int x = tx - (radius * ZONE_SIZE); x <= tz + (radius * ZONE_SIZE); x += 16) {
+    for (int z = tz - TERRAIN_DRAW_RADIUS; z <= tz + TERRAIN_DRAW_RADIUS; z += 16) {
+        for (int x = tx - TERRAIN_DRAW_RADIUS; x <= tz + TERRAIN_DRAW_RADIUS; x += 16) {
             const uPtr<Chunk>& chunk = getChunkAt(x, z);
             if (chunk && chunk->VertexBuffer != VK_NULL_HANDLE) {
                 VkBuffer vertexBuffers[] = { chunk->VertexBuffer };
@@ -406,7 +419,6 @@ void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescr
                 vkCmdBindIndexBuffer(cmdBuffer, chunk->VertexBuffer, static_cast<VkDeviceSize>(sizeof(Vertex) * chunk->vertexSize), VK_INDEX_TYPE_UINT32);
                 vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
                 vkCmdDrawIndexed(cmdBuffer, chunk->numIndices, 1, 0, 0, 0);
-
             }
         }
     }

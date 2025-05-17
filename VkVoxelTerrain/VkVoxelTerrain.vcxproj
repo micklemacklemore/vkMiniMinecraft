@@ -164,6 +164,7 @@ popd</Command>
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="globals.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="renderer.cpp" />
     <ClCompile Include="terrain.cpp" />
     <ClCompile Include="vulkan_resources.cpp" />
     <ClCompile Include="vulkan_setup.cpp" />
@@ -180,6 +181,7 @@ popd</Command>
     <ClInclude Include="camera_fps.h" />
     <ClInclude Include="chunk.h" />
     <ClInclude Include="chunk_constants.h" />
+    <ClInclude Include="commandpoolmanager.h" />
     <ClInclude Include="external\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="external\imgui\backends\imgui_impl_vulkan.h" />
     <ClInclude Include="external\imgui\imconfig.h" />
@@ -190,6 +192,7 @@ popd</Command>
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="glm_includes.h" />
     <ClInclude Include="globals.h" />
+    <ClInclude Include="renderer.h" />
     <ClInclude Include="smartpointerhelp.h" />
     <ClInclude Include="terrain.h" />
     <ClInclude Include="threadpool.h" />
