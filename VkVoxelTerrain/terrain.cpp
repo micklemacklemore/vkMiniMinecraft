@@ -1,6 +1,7 @@
 #include "terrain.h"
 #include "vulkan_setup.h"
 #include "types.h"
+#include "renderer.h"
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
@@ -23,8 +24,8 @@ int roundDown(int n, int m) {
 // Creation Zone: 2 * (64 x 256 x 64) ==> 8x8 Chunks
 // Draw Zone: 4x4 Chunks
 
-Terrain::Terrain()
-    : m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
+Terrain::Terrain(Renderer* vulkanContext)
+    : context(vulkanContext), m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
     descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
     threadPool(std::thread::hardware_concurrency()), pendingChunks(), pendingChunksMutex()
 {}
@@ -32,7 +33,7 @@ Terrain::Terrain()
 Terrain::~Terrain() {
 }
 
-void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
+void Terrain::buildPipelines()
 {
     // Create descriptor set layout
     {
@@ -55,7 +56,7 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
 
-        if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+        if (vkCreateDescriptorSetLayout(context->device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
     }
@@ -64,8 +65,8 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     auto vertShaderCode = readFile("shaders/vert_chunked.spv");
     auto fragShaderCode = readFile("shaders/frag_chunked.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(device, vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(device, fragShaderCode);
+    VkShaderModule vertShaderModule = createShaderModule(context->device, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(context->device, fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -169,7 +170,7 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     //pipelineLayoutInfo.pushConstantRangeCount = 1;
     //pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(context->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -186,34 +187,34 @@ void Terrain::buildPipelines(VkDevice device, VkRenderPass renderPass)
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = context->renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelineChunks) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(context->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipelineChunks) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, vertShaderModule, nullptr);
 
     currentPipeline = &pipelineChunks;
 }
 
-void Terrain::destroyResources(VkDevice device)
+void Terrain::destroyResources()
 {
     threadPool.destroy();
-    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(context->device, descriptorSetLayout, nullptr);
 
-    vkDestroyPipeline(device, pipelineChunks, nullptr);
-    vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyPipeline(context->device, pipelineChunks, nullptr);
+    vkDestroyPipelineLayout(context->device, pipelineLayout, nullptr);
 
     for (const auto& pair : m_chunks) {
         const uPtr<Chunk>& chunk = pair.second;
         if (chunk)
         {
-            vkDestroyBuffer(device, chunk->VertexBuffer, nullptr);
-            vkFreeMemory(device, chunk->VertexBufferMemory, nullptr);
+            vkDestroyBuffer(context->device, chunk->VertexBuffer, nullptr);
+            vkFreeMemory(context->device, chunk->VertexBufferMemory, nullptr);
         }
     }
 }

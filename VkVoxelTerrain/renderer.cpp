@@ -18,7 +18,7 @@
 #include <set>
 #include <stdexcept>
 
-static void check_vk_result(VkResult err)
+static void im_gui_check_vk_result(VkResult err)
 {
     if (err == 0)
         return;
@@ -27,6 +27,39 @@ static void check_vk_result(VkResult err)
         abort();
 }
 
+Renderer::Renderer()
+    : rotate(0.f),
+    zoom(0.f),
+    window(nullptr),
+    instance(VK_NULL_HANDLE),
+    debugMessenger(VK_NULL_HANDLE),
+    surface(VK_NULL_HANDLE),
+    physicalDevice(VK_NULL_HANDLE),
+    device(VK_NULL_HANDLE),
+    queueGraphics(VK_NULL_HANDLE),
+    queuePresent(VK_NULL_HANDLE),
+    queueTransfer(VK_NULL_HANDLE),
+    swapChain(VK_NULL_HANDLE),
+    swapChainImageFormat(),
+    swapChainExtent(),
+    depthImage(VK_NULL_HANDLE),
+    depthImageMemory(VK_NULL_HANDLE),
+    depthImageView(VK_NULL_HANDLE),
+    renderPass(VK_NULL_HANDLE),
+    descriptorPool(VK_NULL_HANDLE),
+    commandPoolGraphics(VK_NULL_HANDLE),
+    commandPoolTransfer(VK_NULL_HANDLE),
+    currentFrame(0),
+    textureImage(VK_NULL_HANDLE),
+    textureImageMemory(VK_NULL_HANDLE),
+    textureImageView(VK_NULL_HANDLE),
+    textureSampler(VK_NULL_HANDLE),
+    framebufferResized(false),
+    camera(WIDTH, HEIGHT, glm::vec3(32., 150., 32.)),
+    terrain(this)
+{
+    // Empty constructor body
+}
 
 void Renderer::run() {
     initWindow();
@@ -35,7 +68,6 @@ void Renderer::run() {
     mainLoop();
     cleanup();
 }
-
 
 void Renderer::initImGui() {
     // initialize imgui
@@ -58,7 +90,7 @@ void Renderer::initImGui() {
     init_info.MinImageCount = 2;
     init_info.ImageCount = swapChainImages.size();
     init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-    init_info.CheckVkResultFn = check_vk_result;
+    init_info.CheckVkResultFn = im_gui_check_vk_result;
 
     ImGui_ImplVulkan_Init(&init_info);
     ImGui_ImplGlfw_InitForVulkan(window, true);
@@ -120,7 +152,7 @@ void Renderer::initVulkan() {
     createFramebuffers();
 
     // Main graphics pipeline
-    terrain.buildPipelines(device, renderPass);
+    terrain.buildPipelines();
 
     // Inputs to shaders
     createTextureImage();
@@ -280,7 +312,7 @@ void Renderer::cleanup() {
 
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-    terrain.destroyResources(device);
+    terrain.destroyResources();
 
     vkDestroyRenderPass(device, renderPass, nullptr);
 

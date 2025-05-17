@@ -27,6 +27,7 @@ private:
     // We combine the X and Z coordinates of the Chunk's corner into one 64-bit int
     // so that we can use them as a key for the map, as objects like std::pairs or
     // glm::ivec2s are not hashable by default, so they cannot be used as keys.
+    Renderer* context; 
     std::unordered_map<int64_t, uPtr<Chunk>> m_chunks;
     std::mutex m_chunks_mutex; 
 
@@ -53,11 +54,11 @@ public:
     VkPipelineLayout pipelineLayout;
     VkPipeline* currentPipeline;
 
-    Terrain();
+    Terrain(Renderer* vulkanContext);
     ~Terrain();
 
-    void buildPipelines(VkDevice device, VkRenderPass renderpass);
-    void destroyResources(VkDevice device); 
+    void buildPipelines();
+    void destroyResources(); 
 
     // Instantiates a new Chunk and stores it in
     // our chunk map at the given coordinates.

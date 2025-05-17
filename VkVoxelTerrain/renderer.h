@@ -9,6 +9,7 @@
 class Renderer {
     friend Terrain;
 public:
+    Renderer(); 
     void run();
 
 private:
