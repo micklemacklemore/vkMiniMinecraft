@@ -53,14 +53,11 @@ void createFaceIndices(std::vector<uint32_t>& idxData, const std::array<uint32_t
     idxData.push_back(faceIndices.at(2));
 }
 
-void Chunk::createVertexData(VkDevice device, VkPhysicalDevice physicalDevice,
-    VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue) {
+void Chunk::createVertexData() {
     // check every block to see if it's NOT empty
     // check the neighbours of each non-empty block to see if they ARE empty
     // if a nebour is empty, add VBO data for a face in that direction
         // vertex pos, vertex col, v normal, idx
-    std::vector<Vertex> vertexData;
-    std::vector<uint32_t> idxData;
     int idxCounter = 0;
 
     // change this so that it vertices are drawn relative to worldspace (using minX / minZ)
@@ -107,16 +104,13 @@ void Chunk::createVertexData(VkDevice device, VkPhysicalDevice physicalDevice,
 
     vertexSize = vertexData.size(); 
     numIndices = idxData.size();
-
-    createVkBuffer(device, physicalDevice, surface, commandPool, queue, vertexData, idxData);
 }
 
 void Chunk::createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
-    VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue, const std::vector<Vertex>& vertex,
-    const std::vector<uint32_t>& idx)
+    VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue)
 {
     // VkDeviceSize bufferSize = sizeof(constants::vertices[0]) * constants::vertices.size();
-    bufferSize = (sizeof(Vertex) * vertex.size()) + (sizeof(uint32_t) * idx.size()); 
+    bufferSize = (sizeof(Vertex) * vertexData.size()) + (sizeof(uint32_t) * idxData.size()); 
 
     // create a staging buffer
     VkBuffer stagingBuffer;
@@ -126,10 +120,10 @@ void Chunk::createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
     // copy to staging
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertex.data(), vertex.size() * sizeof(Vertex));
-    memcpy(static_cast<char*>(data) + (sizeof(Vertex) * vertex.size()),
-        idx.data(),
-        idx.size() * sizeof(uint32_t));
+    memcpy(data, vertexData.data(), vertexData.size() * sizeof(Vertex));
+    memcpy(static_cast<char*>(data) + (sizeof(Vertex) * vertexData.size()),
+        idxData.data(),
+        idxData.size() * sizeof(uint32_t));
     vkUnmapMemory(device, stagingBufferMemory);
 
     // create device bufferand copy to buffer
@@ -141,5 +135,9 @@ void Chunk::createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
     // destroy staging buffer
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
+
+    // flush vertex data on cpu
+    vertexData.clear(); 
+    idxData.clear(); 
 }
 

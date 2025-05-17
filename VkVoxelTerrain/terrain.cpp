@@ -27,7 +27,7 @@ int roundDown(int n, int m) {
 Terrain::Terrain(Renderer* vulkanContext)
     : context(vulkanContext), m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
     descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
-    threadPool(16), pendingChunks(), pendingChunksMutex(), 
+    threadPool(16), pendingChunks(), pendingChunksMutex(), drawableChunks(), drawableChunksMutex(),
     transferCmdPoolManager{}
 {}
 
@@ -330,9 +330,9 @@ void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
             Chunk* chunk = instantiateChunkAt(terrainCoord[0] + x, terrainCoord[1] + z);
 
             // flat terrain
-            for (int x = 0; x < 16; x++) {
-                for (int z = 0; z < 16; z++) {
-                    chunk->setBlockAt(x, 128, z, GRASS);
+            for (int xx = 0; xx < 16; xx++) {
+                for (int zz = 0; zz < 16; zz++) {
+                    chunk->setBlockAt(xx, 128, zz, GRASS);
                 }
             }
 
@@ -344,9 +344,9 @@ void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 
 void Terrain::threadCreateBufferData(Chunk* chunk)
 {
-    auto cmdPool = transferCmdPoolManager.getCommandPool(); 
-    chunk->createVertexData(context->device, context->physicalDevice, context->surface, cmdPool.first, context->queueTransfer); 
-    cmdPool.second->unlock(); 
+    chunk->createVertexData();
+    std::lock_guard<std::mutex> lock(drawableChunksMutex);
+    drawableChunks.push_back(chunk); 
 }
 
 void Terrain::tryExpansion(const glm::vec3& pos)
@@ -383,6 +383,19 @@ void Terrain::tryExpansion(const glm::vec3& pos)
     for (Chunk* chunk : chunksToProcess) {
         threadPool.enqueue(&Terrain::threadCreateBufferData, this, chunk);
     }
+
+    std::vector<Chunk*> copyChunks;
+
+    {
+        std::lock_guard<std::mutex> lock(drawableChunksMutex);
+        copyChunks.swap(drawableChunks); // Efficient: avoids copying
+    }
+
+    for (Chunk* chunk : copyChunks)
+    {
+        chunk->createVkBuffer(context->device, context->physicalDevice,
+            context->surface, context->commandPoolTransfer, context->queueTransfer);
+    }
 }
 
 Chunk* Terrain::instantiateChunkAt(int x, int z) {
@@ -415,10 +428,8 @@ void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescr
     // m_geomCube.clearOffsetBuf();
     // m_geomCube.clearColorBuf();
 
-    // int tx = roundDown(position.x, ZONE_SIZE);
-    // int tz = roundDown(position.z, ZONE_SIZE);
-    int tx = 0; 
-    int tz = 0; 
+    int tx = roundDown(position.x, ZONE_SIZE);
+    int tz = roundDown(position.z, ZONE_SIZE);
 
     vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
 

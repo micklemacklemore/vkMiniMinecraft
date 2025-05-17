@@ -54,10 +54,8 @@ private:
     // a key for this map.
     // These allow us to properly determine
     std::unordered_map<Direction, Chunk*, EnumHash> m_neighbors;
-
-    void createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice, 
-        VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue, 
-        const std::vector<Vertex>& vertex, const std::vector<uint32_t>& idx);
+    std::vector<Vertex> vertexData;
+    std::vector<uint32_t> idxData;
 public:
     // Contains both vertex and index data
     VkBuffer VertexBuffer = VK_NULL_HANDLE;
@@ -72,6 +70,7 @@ public:
     BlockType getBlockAt(int x, int y, int z) const;
     void setBlockAt(unsigned int x, unsigned int y, unsigned int z, BlockType t);
     void linkNeighbor(uPtr<Chunk>& neighbor, Direction dir);
-    void createVertexData(VkDevice device, VkPhysicalDevice physicalDevice,
+    void createVertexData();
+    void createVkBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
         VkSurfaceKHR surface, VkCommandPool commandPool, VkQueue queue);
 };

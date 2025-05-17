@@ -48,8 +48,13 @@ private:
     std::unordered_set<int64_t> m_generatedTerrain;
     VkPipeline pipelineChunks;
     ThreadPool threadPool; 
+
     std::vector<Chunk*> pendingChunks; 
     std::mutex pendingChunksMutex; 
+
+    std::vector<Chunk*> drawableChunks; 
+    std::mutex drawableChunksMutex; 
+
     CommandPoolManager transferCmdPoolManager;
 public:
     VkDescriptorSetLayout descriptorSetLayout;
