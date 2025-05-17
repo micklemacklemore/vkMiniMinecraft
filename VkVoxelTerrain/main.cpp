@@ -1,5 +1,7 @@
 #include "renderer.h"
 
+#include <iostream>
+
 int main() {
     Renderer app;
 
