@@ -27,7 +27,8 @@ int roundDown(int n, int m) {
 Terrain::Terrain(Renderer* vulkanContext)
     : context(vulkanContext), m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
     descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
-    threadPool(std::thread::hardware_concurrency()), pendingChunks(), pendingChunksMutex()
+    threadPool(16), pendingChunks(), pendingChunksMutex(), 
+    transferCmdPoolManager{}
 {}
 
 Terrain::~Terrain() {
@@ -199,11 +200,17 @@ void Terrain::buildPipelines()
     vkDestroyShaderModule(context->device, vertShaderModule, nullptr);
 
     currentPipeline = &pipelineChunks;
+
+    // init the command pool manager
+
+    QueueFamilyIndices indices = findQueueFamilies(context->physicalDevice, context->surface);
+    transferCmdPoolManager.init(context->device, indices.transferFamily.value());
 }
 
 void Terrain::destroyResources()
 {
     threadPool.destroy();
+    transferCmdPoolManager.cleanup(); 
     vkDestroyDescriptorSetLayout(context->device, descriptorSetLayout, nullptr);
 
     vkDestroyPipeline(context->device, pipelineChunks, nullptr);
@@ -318,8 +325,8 @@ void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
     s << glm::to_string(terrainCoord) << std::endl;
     std::cout << s.str();*/
 
-    for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z++) {
-        for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x++) {
+    for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z += 16) {
+        for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x += 16) {
             Chunk* chunk = instantiateChunkAt(terrainCoord[0] + x, terrainCoord[1] + z);
 
             // flat terrain
@@ -337,7 +344,9 @@ void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 
 void Terrain::threadCreateBufferData(Chunk* chunk)
 {
-    // chunk->createVertexData(); 
+    auto cmdPool = transferCmdPoolManager.getCommandPool(); 
+    chunk->createVertexData(context->device, context->physicalDevice, context->surface, cmdPool.first, context->queueTransfer); 
+    cmdPool.second->unlock(); 
 }
 
 void Terrain::tryExpansion(const glm::vec3& pos)
@@ -367,7 +376,7 @@ void Terrain::tryExpansion(const glm::vec3& pos)
     }
 
     for (Chunk* chunk : chunksToProcess) {
-        // threadPool.enqueue(&Terrain::threadCreateBufferData, this, chunk);
+        threadPool.enqueue(&Terrain::threadCreateBufferData, this, chunk);
     }
 }
 

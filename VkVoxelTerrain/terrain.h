@@ -4,6 +4,7 @@
 #include "glm_includes.h"
 #include "chunk.h"
 #include "threadpool.h"
+#include "commandpoolmanager.h"
 
 #include <array>
 #include <unordered_map>
@@ -49,6 +50,7 @@ private:
     ThreadPool threadPool; 
     std::vector<Chunk*> pendingChunks; 
     std::mutex pendingChunksMutex; 
+    CommandPoolManager transferCmdPoolManager;
 public:
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
