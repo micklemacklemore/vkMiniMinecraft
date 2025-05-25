@@ -41,14 +41,14 @@ private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void mouseCallback(GLFWwindow* window, double xpos, double ypos);
 
-    float rotate = 0.f;
-    float zoom = 0.f;
+    float rotate;
+    float zoom;
 
     GLFWwindow* window;
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice;
     VkDevice device;
 
     VkQueue queueGraphics, queuePresent, queueTransfer;
@@ -82,8 +82,8 @@ private:
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
 
-    bool framebufferResized = false;
-    CameraFPS camera{ WIDTH, HEIGHT, glm::vec3(32., 150., 32.) };
+    bool framebufferResized;
+    CameraFPS camera;
     Terrain terrain;
 };
 

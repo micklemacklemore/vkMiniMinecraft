@@ -8,10 +8,12 @@
 #include <thread>
 #include <mutex>
 
-// a "zone" is a 4*4 area of chunks
-#define TERRAIN_DRAW_MULTIPLIER 1       // (1) 3x3 draw zone radius
-#define TERRAIN_CREATE_MULTIPLIER 2    // (2) 5x5 create zone radius
-#define ZONE_SIZE 64
+// a "zone" is a 4*4 area of chunks (64 * 64 blocks)
+// a "chunk" contains 16 * 256 * 16 blocks
+#define TERRAIN_DRAW_MULTIPLIER 1       // (Default: 1 / 3x3 draw zone radius) 
+#define TERRAIN_CREATE_MULTIPLIER 1     // (Default: 2 / 5x5 create zone radius) 
+#define ZONE_SIZE 64                    // the length of a zone (in blocks) 
+#define CHUNK_LENGTH 16                 // chunk length/width
 
 #define TERRAIN_DRAW_RADIUS         ZONE_SIZE * TERRAIN_DRAW_MULTIPLIER
 #define TERRAIN_CREATE_RADIUS       ZONE_SIZE * TERRAIN_CREATE_MULTIPLIER
@@ -19,10 +21,6 @@
 int roundDown(int n, int m) {
     return n >= 0 ? (n / m) * m : ((n - m + 1) / m) * m;
 }
-
-// Chunks: 16 by 256 by 16
-// Creation Zone: 2 * (64 x 256 x 64) ==> 8x8 Chunks
-// Draw Zone: 4x4 Chunks
 
 Terrain::Terrain(Renderer* vulkanContext)
     : context(vulkanContext), m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
@@ -319,20 +317,28 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
+int Terrain::generateTerrain(glm::ivec2 worldPos) {
+    return 0; 
+}
+
 void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 {
-    /*std::stringstream s; 
-    s << glm::to_string(terrainCoord) << std::endl;
-    std::cout << s.str();*/
 
     for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z += 16) {
         for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x += 16) {
-            Chunk* chunk = instantiateChunkAt(terrainCoord[0] + x, terrainCoord[1] + z);
+            Chunk* chunk = instantiateChunkAt(x, z);
 
             // flat terrain
-            for (int xx = 0; xx < 16; xx++) {
-                for (int zz = 0; zz < 16; zz++) {
-                    chunk->setBlockAt(xx, 128, zz, GRASS);
+            for (int chunkX = 0; chunkX < 16; chunkX++) {
+                for (int chunkZ = 0; chunkZ < 16; chunkZ++) {
+                    glm::ivec2 worldPos(x + chunkX, z + chunkZ); 
+                    if (glm::abs(worldPos.x) % 64 == 0 || glm::abs(worldPos.y) % 64 == 0) {
+                        chunk->setBlockAt(chunkX, 128, chunkZ, STONE);
+                    }
+                    else {
+                        chunk->setBlockAt(chunkX, 128, chunkZ, GRASS);
+                    }
+                    
                 }
             }
 
@@ -351,8 +357,8 @@ void Terrain::threadCreateBufferData(Chunk* chunk)
 
 void Terrain::tryExpansion(const glm::vec3& pos)
 {
-    int terrainX = roundDown(pos.x, ZONE_SIZE); 
-    int terrainZ = roundDown(pos.z, ZONE_SIZE); 
+    int terrainX = roundDown(int(pos.x), ZONE_SIZE); 
+    int terrainZ = roundDown(int(pos.z), ZONE_SIZE); 
 
     // the "create radius" are the collection of zones around the player with generated block data
     // the "draw radius" are the zones that are actually drawn to screen, which must be <= the create radius
@@ -423,18 +429,9 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
     return cPtr;
 }
 
-
-void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
-    // m_geomCube.clearOffsetBuf();
-    // m_geomCube.clearColorBuf();
-
-    int tx = roundDown(position.x, ZONE_SIZE);
-    int tz = roundDown(position.z, ZONE_SIZE);
-
-    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
-
-    for (int z = tz - TERRAIN_DRAW_RADIUS; z <= tz + TERRAIN_DRAW_RADIUS; z += 16) {
-        for (int x = tx - TERRAIN_DRAW_RADIUS; x <= tz + TERRAIN_DRAW_RADIUS; x += 16) {
+void Terrain::drawZone(glm::ivec2 zone, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
+    for (int z = zone[1]; z < zone[1] + ZONE_SIZE; z += 16) {
+        for (int x = zone[0]; x < zone[0] + ZONE_SIZE; x += 16) {
             const uPtr<Chunk>& chunk = getChunkAt(x, z);
             if (chunk && chunk->VertexBuffer != VK_NULL_HANDLE) {
                 VkBuffer vertexBuffers[] = { chunk->VertexBuffer };
@@ -444,6 +441,20 @@ void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescr
                 vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
                 vkCmdDrawIndexed(cmdBuffer, chunk->numIndices, 1, 0, 0, 0);
             }
+        }
+    }
+}
+
+
+void Terrain::draw(const glm::vec3& position, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet) {
+    int tx = roundDown(int(position.x), ZONE_SIZE);
+    int tz = roundDown(int(position.z), ZONE_SIZE);
+
+    vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *currentPipeline);
+
+    for (int z = tz - TERRAIN_DRAW_RADIUS; z <= tz + TERRAIN_DRAW_RADIUS; z += ZONE_SIZE) {
+        for (int x = tx - TERRAIN_DRAW_RADIUS; x <= tx + TERRAIN_DRAW_RADIUS; x += ZONE_SIZE) {
+            drawZone(glm::ivec2(x, z), cmdBuffer, descriptorSet); 
         }
     }
 }

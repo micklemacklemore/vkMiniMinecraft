@@ -71,6 +71,7 @@ public:
     // our chunk map at the given coordinates.
     // Returns a pointer to the created Chunk.
     Chunk* instantiateChunkAt(int x, int z);
+    void drawZone(glm::ivec2 zone, VkCommandBuffer cmdBuffer, VkDescriptorSet descriptorSet);
     // Do these world-space coordinates lie within
     // a Chunk that exists?
     bool hasChunkAt(int x, int z);
@@ -86,6 +87,8 @@ public:
     void setBlockAt(int x, int y, int z, BlockType t);
 
     void tryExpansion(const glm::vec3& pos); 
+
+    int generateTerrain(glm::ivec2 worldPos); 
 
     void threadCreateBlockData(glm::vec2 terrainCoord); 
     void threadCreateBufferData(Chunk* chunk); 

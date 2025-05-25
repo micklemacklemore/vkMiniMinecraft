@@ -188,6 +188,10 @@ void Renderer::mainLoop() {
     vkDeviceWaitIdle(device);
 }
 
+static int roundDown(int n, int m) {
+    return n >= 0 ? (n / m) * m : ((n - m + 1) / m) * m;
+}
+
 void Renderer::createGUIOverlay() {
     ImGuiIO& io = ImGui::GetIO();
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -211,6 +215,7 @@ void Renderer::createGUIOverlay() {
         ImGui::Separator();
         glm::vec3 campos = camera.getPosition();
         ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", campos.x, campos.y, campos.z);
+        ImGui::Text("Zone Location: (%d, %d)", roundDown(int(campos.x), 64), roundDown(int(campos.z), 64)); 
 
         int counter = 1;
         for (const auto& chunkID : terrain.m_generatedTerrain) {
