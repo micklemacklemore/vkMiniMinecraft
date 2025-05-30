@@ -1,4 +1,8 @@
-# TODO (vkMiniMinecraft)
+# Multi-Threaded Vulkan Minecraft
+
+**Multi-Threaded Vulkan Minecraft is a re-created version of Minecraft built from the ground up using Vulkan and C++ `<threads>`. It features dynamic chunk loading, biome-based terrain generation, handled on multiple threads and in real-time. This is a personal project developed over the course of 2 weeks to explore multi-threaded command buffer creation in Vulkan.**
+
+### Progress Video 2
 
 ### Progress Video 1
 
