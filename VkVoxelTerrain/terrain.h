@@ -88,7 +88,7 @@ public:
 
     void tryExpansion(const glm::vec3& pos); 
 
-    int generateTerrain(glm::ivec2 worldPos); 
+    BlockType createBlock(int x, int y, int z); 
 
     void threadCreateBlockData(glm::vec2 terrainCoord); 
     void threadCreateBufferData(Chunk* chunk); 

@@ -11,8 +11,8 @@
 
 // a "zone" is a 4*4 area of chunks (64 * 64 blocks)
 // a "chunk" contains 16 * 256 * 16 blocks
-#define TERRAIN_DRAW_MULTIPLIER 4       // (Default: 1 / 3x3 draw zone radius) 
-#define TERRAIN_CREATE_MULTIPLIER 4     // (Default: 2 / 5x5 create zone radius) 
+#define TERRAIN_DRAW_MULTIPLIER 2       // (Default: 1 / 3x3 draw zone radius) 
+#define TERRAIN_CREATE_MULTIPLIER 2     // (Default: 2 / 5x5 create zone radius) 
 #define ZONE_SIZE 64                    // the length of a zone (in blocks) 
 #define CHUNK_LENGTH 16                 // chunk length/width
 
@@ -318,37 +318,37 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
-int Terrain::generateTerrain(glm::ivec2 worldPos) {
-    return 0; 
+BlockType Terrain::createBlock(int x, int y, int z) {
+    SimplexNoise fbm(0.01);
+    float noiseVal = fbm.fractal(3, x, z); // [-1, 1]
+    float mapped = ((noiseVal + 1.0f) / 2.0f) * (120 - 100) + 100; // [100, 120]
+    int height = static_cast<int>(mapped);
+
+    if (y < height) return GRASS; 
+
+    return EMPTY; 
 }
 
 void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 {
-    SimplexNoise fbm(0.01); 
     for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z += 16) {
         for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x += 16) {
             Chunk* chunk = instantiateChunkAt(x, z);
 
             for (int chunkX = 0; chunkX < 16; chunkX++) {
                 for (int chunkZ = 0; chunkZ < 16; chunkZ++) {
+                    for (int height = 0; height < 256; height++) {
+                        int worldX = x + chunkX;
+                        int worldZ = z + chunkZ;
 
-                    glm::ivec2 worldPos(x + chunkX, z + chunkZ);
+                        BlockType blockType = createBlock(worldX, height, worldZ);
 
-                    float noiseVal = fbm.fractal(3, worldPos.x, worldPos.y); // [-1, 1]
-                    float mapped = ((noiseVal + 1.0f) / 2.0f) * (120 - 100) + 100; // [100, 120]
-
-                    int height = static_cast<int>(mapped);
-
-                    if (glm::abs(worldPos.x) % 64 == 0 || glm::abs(worldPos.y) % 64 == 0) {
-                        chunk->setBlockAt(chunkX, height, chunkZ, STONE);
+                        if (blockType != EMPTY) {
+                            chunk->setBlockAt(chunkX, height, chunkZ, blockType);
+                        }
                     }
-                    else {
-                        chunk->setBlockAt(chunkX, height, chunkZ, GRASS);
-                    }
-                    
                 }
             }
-
             std::lock_guard<std::mutex> lock(pendingChunksMutex);
             pendingChunks.push_back(chunk); 
         }
