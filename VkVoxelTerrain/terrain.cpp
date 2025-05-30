@@ -1,4 +1,5 @@
 #include "terrain.h"
+#include "terrain_util.h"
 #include "vulkan_setup.h"
 #include "types.h"
 #include "renderer.h"
@@ -10,8 +11,8 @@
 
 // a "zone" is a 4*4 area of chunks (64 * 64 blocks)
 // a "chunk" contains 16 * 256 * 16 blocks
-#define TERRAIN_DRAW_MULTIPLIER 1       // (Default: 1 / 3x3 draw zone radius) 
-#define TERRAIN_CREATE_MULTIPLIER 1     // (Default: 2 / 5x5 create zone radius) 
+#define TERRAIN_DRAW_MULTIPLIER 4       // (Default: 1 / 3x3 draw zone radius) 
+#define TERRAIN_CREATE_MULTIPLIER 4     // (Default: 2 / 5x5 create zone radius) 
 #define ZONE_SIZE 64                    // the length of a zone (in blocks) 
 #define CHUNK_LENGTH 16                 // chunk length/width
 
@@ -323,20 +324,26 @@ int Terrain::generateTerrain(glm::ivec2 worldPos) {
 
 void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 {
-
+    SimplexNoise fbm(0.01); 
     for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z += 16) {
         for (int x = terrainCoord[0]; x < terrainCoord[0] + ZONE_SIZE; x += 16) {
             Chunk* chunk = instantiateChunkAt(x, z);
 
-            // flat terrain
             for (int chunkX = 0; chunkX < 16; chunkX++) {
                 for (int chunkZ = 0; chunkZ < 16; chunkZ++) {
-                    glm::ivec2 worldPos(x + chunkX, z + chunkZ); 
+
+                    glm::ivec2 worldPos(x + chunkX, z + chunkZ);
+
+                    float noiseVal = fbm.fractal(3, worldPos.x, worldPos.y); // [-1, 1]
+                    float mapped = ((noiseVal + 1.0f) / 2.0f) * (120 - 100) + 100; // [100, 120]
+
+                    int height = static_cast<int>(mapped);
+
                     if (glm::abs(worldPos.x) % 64 == 0 || glm::abs(worldPos.y) % 64 == 0) {
-                        chunk->setBlockAt(chunkX, 128, chunkZ, STONE);
+                        chunk->setBlockAt(chunkX, height, chunkZ, STONE);
                     }
                     else {
-                        chunk->setBlockAt(chunkX, 128, chunkZ, GRASS);
+                        chunk->setBlockAt(chunkX, height, chunkZ, GRASS);
                     }
                     
                 }

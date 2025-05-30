@@ -217,12 +217,12 @@ void Renderer::createGUIOverlay() {
         ImGui::Text("Camera Position: (%.1f, %.1f, %.1f)", campos.x, campos.y, campos.z);
         ImGui::Text("Zone Location: (%d, %d)", roundDown(int(campos.x), 64), roundDown(int(campos.z), 64)); 
 
-        int counter = 1;
+        /*int counter = 1;
         for (const auto& chunkID : terrain.m_generatedTerrain) {
             glm::ivec2 coords = toCoords(chunkID);
             ImGui::Text("%d: (%d, %d)", counter, coords.x, coords.y);
             ++counter;
-        }
+        }*/
     }
     ImGui::End();
 }
