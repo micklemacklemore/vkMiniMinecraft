@@ -1,6 +1,10 @@
 #pragma once
 
 #include <cstddef>  // size_t
+#include "chunk.h"
+
+
+BlockType createBlock(int x, int y, int z); 
 
 /**
  * @file    SimplexNoise.h

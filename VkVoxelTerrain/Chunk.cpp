@@ -1,9 +1,12 @@
 #include "chunk.h"
+#include "terrain_util.h"
 #include "chunk_constants.h"
 #include "vulkan_resources.h"
 #include "types.h" 
 
-Chunk::Chunk(int x, int z) : m_blocks(), minX(x), minZ(z), m_neighbors{ {XPOS, nullptr}, {XNEG, nullptr}, {ZPOS, nullptr}, {ZNEG, nullptr} }
+Chunk::Chunk(int x, int z) : m_blocks(), minX(x), minZ(z), vertexData(), 
+    idxData(), VertexBuffer(VK_NULL_HANDLE), VertexBufferMemory(VK_NULL_HANDLE), 
+    numIndices(), vertexSize(), bufferSize()
 {
     std::fill_n(m_blocks.begin(), 65536, EMPTY);
 }
@@ -32,13 +35,6 @@ const static std::unordered_map<Direction, Direction, EnumHash> oppositeDirectio
     {ZPOS, ZNEG},
     {ZNEG, ZPOS}
 };
-
-void Chunk::linkNeighbor(uPtr<Chunk>& neighbor, Direction dir) {
-    if (neighbor != nullptr) {
-        this->m_neighbors[dir] = neighbor.get();
-        neighbor->m_neighbors[oppositeDirection.at(dir)] = this;
-    }
-}
 
 void createFaceIndices(std::vector<uint32_t>& idxData, const std::array<uint32_t, ChunkConstants::VERT_COUNT>& faceIndices) {
     // 0: UR, 1: LR, 2: LL, 3: UL
@@ -76,7 +72,7 @@ void Chunk::createVertexData() {
                         if (offset.x < 0 || offset.x > 15 ||
                             offset.y < 0 || offset.y > 255 ||
                             offset.z < 0 || offset.z > 15) {
-                            neighbour = EMPTY;
+                            neighbour = createBlock(minX + offset.x, offset.y, minZ + offset.z);
                         }
                         else {
                             neighbour = this->getBlockAt(offset.x, offset.y, offset.z);

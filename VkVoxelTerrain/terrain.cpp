@@ -12,7 +12,7 @@
 // a "zone" is a 4*4 area of chunks (64 * 64 blocks)
 // a "chunk" contains 16 * 256 * 16 blocks
 #define TERRAIN_DRAW_MULTIPLIER 2       // (Default: 1 / 3x3 draw zone radius) 
-#define TERRAIN_CREATE_MULTIPLIER 2     // (Default: 2 / 5x5 create zone radius) 
+#define TERRAIN_CREATE_MULTIPLIER 3     // (Default: 2 / 5x5 create zone radius) 
 #define ZONE_SIZE 64                    // the length of a zone (in blocks) 
 #define CHUNK_LENGTH 16                 // chunk length/width
 
@@ -318,17 +318,6 @@ void Terrain::setBlockAt(int x, int y, int z, BlockType t)
     }
 }
 
-BlockType Terrain::createBlock(int x, int y, int z) {
-    SimplexNoise fbm(0.01);
-    float noiseVal = fbm.fractal(3, x, z); // [-1, 1]
-    float mapped = ((noiseVal + 1.0f) / 2.0f) * (120 - 100) + 100; // [100, 120]
-    int height = static_cast<int>(mapped);
-
-    if (y < height) return GRASS; 
-
-    return EMPTY; 
-}
-
 void Terrain::threadCreateBlockData(glm::vec2 terrainCoord)
 {
     for (int z = terrainCoord[1]; z < terrainCoord[1] + ZONE_SIZE; z += 16) {
@@ -416,23 +405,6 @@ Chunk* Terrain::instantiateChunkAt(int x, int z) {
     Chunk *cPtr = chunk.get();
     std::lock_guard<std::mutex> lock{ m_chunks_mutex }; 
     m_chunks[toKey(x, z)] = move(chunk); 
-    // Set the neighbor pointers of itself and its neighbors
-    if(hasChunkAt(x, z + 16)) {
-        auto &chunkNorth = m_chunks[toKey(x, z + 16)];
-        cPtr->linkNeighbor(chunkNorth, ZPOS);
-    }
-    if(hasChunkAt(x, z - 16)) {
-        auto &chunkSouth = m_chunks[toKey(x, z - 16)];
-        cPtr->linkNeighbor(chunkSouth, ZNEG);
-    }
-    if(hasChunkAt(x + 16, z)) {
-        auto &chunkEast = m_chunks[toKey(x + 16, z)];
-        cPtr->linkNeighbor(chunkEast, XPOS);
-    }
-    if(hasChunkAt(x - 16, z)) {
-        auto &chunkWest = m_chunks[toKey(x - 16, z)];
-        cPtr->linkNeighbor(chunkWest, XNEG);
-    }
     return cPtr;
 }
 

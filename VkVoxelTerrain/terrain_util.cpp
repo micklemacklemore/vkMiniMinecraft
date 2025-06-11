@@ -25,8 +25,21 @@
  */
 
 #include "terrain_util.h"
+#include "chunk.h"
 
 #include <cstdint>  // int32_t/uint8_t
+
+
+BlockType createBlock(int x, int y, int z) {
+    SimplexNoise fbm(0.01);
+    float noiseVal = fbm.fractal(3, x, z); // [-1, 1]
+    float mapped = ((noiseVal + 1.0f) / 2.0f) * (120 - 100) + 100; // [100, 120]
+    int height = static_cast<int>(mapped);
+
+    if (y < height) return GRASS;
+
+    return EMPTY;
+}
 
  /**
   * Computes the largest integer value not greater than the float one
