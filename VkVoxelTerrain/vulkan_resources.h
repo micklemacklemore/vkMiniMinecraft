@@ -35,9 +35,9 @@ void copyBuffer(VkDevice device, VkCommandPool commandPool, VkQueue queue,
 
 // Creates image object and associated memory bound to it.
 void createImage(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-    uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format,
-    VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkImage& image, VkDeviceMemory& imageMemory);
+    uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
+    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+    VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
 // Copies buffer data into a Vulkan image.
 void copyBufferToImage(VkDevice device, VkCommandPool commandPool, VkQueue queue,

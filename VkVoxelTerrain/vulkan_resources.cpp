@@ -123,9 +123,9 @@ void copyBuffer(VkDevice device, VkCommandPool transferCommandPool, VkQueue queu
 }
 
 void createImage(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-    uint32_t width, uint32_t height, uint32_t mipLevels, VkFormat format,
-    VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkImage& image, VkDeviceMemory& imageMemory)
+    uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
+    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+    VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
     QueueFamilyIndices queueFamilies = findQueueFamilies(physicalDevice, surface);
     std::array<uint32_t, 2> indices = { queueFamilies.graphicsFamily.value(), queueFamilies.transferFamily.value() };
@@ -142,7 +142,7 @@ void createImage(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR 
     imageInfo.tiling = tiling;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage;
-    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
     imageInfo.queueFamilyIndexCount = indices.size();
     imageInfo.pQueueFamilyIndices = indices.data();

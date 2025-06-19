@@ -33,6 +33,7 @@ private:
     void createCommandPools();
     void createPerFrameCommandBuffers();
     void createDescriptorPool();
+    void createColorResources(); 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void updateUniformBuffer(uint32_t currentImage);
     void createSyncObjects();
@@ -58,10 +59,15 @@ private:
     VkExtent2D swapChainExtent;
     std::vector<VkImageView> swapChainImageViews;
     std::vector<VkFramebuffer> swapChainFramebuffers;
+
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
     VkRenderPass renderPass;
+
+    VkImage colorImage; 
+    VkDeviceMemory colorImageMemory; 
+    VkImageView colorImageView; 
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -78,6 +84,8 @@ private:
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
     VkSampler textureSampler;
+
+    VkSampleCountFlagBits msaaSamples; 
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;

@@ -84,3 +84,6 @@ VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code
 
 std::vector<char> readFile(const std::string& filename);
 
+// Queries the maximum number of samples possible on the current physical device. 
+VkSampleCountFlagBits getMaxUsableSampleCount(VkPhysicalDevice physicalDevice);
+
