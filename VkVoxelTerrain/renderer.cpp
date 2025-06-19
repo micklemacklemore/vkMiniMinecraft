@@ -50,6 +50,7 @@ Renderer::Renderer()
     commandPoolGraphics(VK_NULL_HANDLE),
     commandPoolTransfer(VK_NULL_HANDLE),
     currentFrame(0),
+    mipLevels(),
     textureImage(VK_NULL_HANDLE),
     textureImageMemory(VK_NULL_HANDLE),
     textureImageView(VK_NULL_HANDLE),
@@ -489,6 +490,8 @@ void Renderer::createTextureImage() {
         throw std::runtime_error("failed to load texture image!");
     }
 
+    mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
     // create a staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -508,43 +511,43 @@ void Renderer::createTextureImage() {
 
     // create image object
     createImage(device, physicalDevice, surface,
-        texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB,
+        texWidth, texHeight, mipLevels,
+        VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        textureImage,
-        textureImageMemory
-    );
+        textureImage, textureImageMemory);
 
     // copy staging buffer to image
     transitionImageLayout(device, commandPoolTransfer, queueTransfer,
         textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
 
     copyBufferToImage(device, commandPoolTransfer, queueTransfer, stagingBuffer, textureImage,
         static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-    // transition to shader read
-    transitionImageLayout(device, commandPoolGraphics, queueGraphics,
+    /*transitionImageLayout(device, commandPoolGraphics, queueGraphics,
         textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);*/
+
+    // generates mip maps and also transitions layout to shader read
+    generateMipmaps(device, physicalDevice, commandPoolGraphics, queueGraphics, textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
 
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 void Renderer::createTextureImageView() {
-    textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+    textureImageView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
 }
 
 void Renderer::createDepthResources() {
     VkFormat depthFormat = findDepthFormat(physicalDevice);
     createImage(device, physicalDevice, surface,
-        swapChainExtent.width, swapChainExtent.height,
-        depthFormat, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-    depthImageView = createImageView(device, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        swapChainExtent.width, swapChainExtent.height, 1, depthFormat,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
+    depthImageView = createImageView(device, depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 }
 
 void Renderer::createTextureSampler() {
@@ -566,8 +569,8 @@ void Renderer::createTextureSampler() {
     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = 0.0f;
+    samplerInfo.minLod = 0.0f; // Optional
+    samplerInfo.maxLod = static_cast<float>(mipLevels);
 
     if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture sampler!");

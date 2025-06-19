@@ -71,8 +71,9 @@ private:
 
     std::vector<VkSemaphore> imageAvailableSemaphores, renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-    uint32_t currentFrame = 0;
+    uint32_t currentFrame;
 
+    uint32_t mipLevels; 
     VkImage textureImage;
     VkDeviceMemory textureImageMemory;
     VkImageView textureImageView;
