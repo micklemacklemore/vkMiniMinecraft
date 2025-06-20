@@ -378,11 +378,6 @@ void Terrain::tryExpansion(const glm::vec3& pos)
         chunksToProcess.swap(pendingChunks); // Efficient: avoids copying
     }
 
-    // TODO: I don't think this works: 
-    //
-    // you need to wait for the vk buffers to be filled before we can actually draw them, and we don't do that here. 
-    // also, we need mutexes around queue submission, OR, what we should be doing is record all the cmd buffers and
-    // submit all at once, or something
     for (Chunk* chunk : chunksToProcess) {
         threadPool.enqueue(&Terrain::threadCreateBufferData, this, chunk);
     }
