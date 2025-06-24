@@ -173,6 +173,7 @@ popd</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="external\imgui\misc\debuggers\imgui.natstepfilter" />
+    <None Include="shaders\generate_terrain.comp" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
     <None Include="shaders\shader_chunked.frag" />

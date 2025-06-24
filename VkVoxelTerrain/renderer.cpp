@@ -84,7 +84,7 @@ void Renderer::initImGui() {
     init_info.Instance = instance;
     init_info.PhysicalDevice = physicalDevice;
     init_info.Device = device;
-    init_info.QueueFamily = indices.graphicsFamily.value();
+    init_info.QueueFamily = indices.graphicsAndComputeFamily.value();
     init_info.Queue = queueGraphics;
     init_info.DescriptorPoolSize = 2;
     init_info.MSAASamples = msaaSamples;
@@ -660,7 +660,7 @@ void Renderer::createCommandPools() {
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily.value();
 
         if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPoolGraphics) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");

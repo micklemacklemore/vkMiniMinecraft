@@ -2,4 +2,5 @@ C:/VulkanSDK/1.4.313.0/Bin/glslc.exe shader.vert -o vert.spv
 C:/VulkanSDK/1.4.313.0/Bin/glslc.exe shader.frag -o frag.spv
 C:/VulkanSDK/1.4.313.0/Bin/glslc.exe shader_chunked.vert -o vert_chunked.spv
 C:/VulkanSDK/1.4.313.0/Bin/glslc.exe shader_chunked.frag -o frag_chunked.spv
+C:/VulkanSDK/1.4.313.0/Bin/glslc.exe generate_terrain.comp -o generate_terrain.spv
 echo Ran Compile Script

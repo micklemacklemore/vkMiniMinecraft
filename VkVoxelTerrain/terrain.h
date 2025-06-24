@@ -46,17 +46,20 @@ private:
     // surrounding the Player should be rendered, the Chunks
     // in the Terrain will never be deleted until the program is terminated.
     std::unordered_set<int64_t> m_generatedTerrain;
-    VkPipeline pipelineChunks;
     ThreadPool threadPool; 
+
+    VkPipeline pipelineChunks;
+    VkPipeline pipelineGenerateTerrain; 
 
     std::vector<Chunk*> pendingChunks; 
     std::mutex pendingChunksMutex; 
 
     std::vector<Chunk*> drawableChunks; 
     std::mutex drawableChunksMutex; 
-
-    CommandPoolManager transferCmdPoolManager;
 public:
+    VkDescriptorSetLayout generateTerrainDescriptorSetLayout; 
+    VkPipelineLayout generateTerrainPipelineLayout; 
+
     VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline* currentPipeline;

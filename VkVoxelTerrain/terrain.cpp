@@ -11,8 +11,8 @@
 
 // a "zone" is a 4*4 area of chunks (64 * 64 blocks)
 // a "chunk" contains 16 * 256 * 16 blocks
-#define TERRAIN_DRAW_MULTIPLIER 2       // (Default: 1 / 3x3 draw zone radius) 
-#define TERRAIN_CREATE_MULTIPLIER 3     // (Default: 2 / 5x5 create zone radius) 
+#define TERRAIN_DRAW_MULTIPLIER 1       // (Default: 1 / 3x3 draw zone radius) 
+#define TERRAIN_CREATE_MULTIPLIER 2     // (Default: 2 / 5x5 create zone radius) 
 #define ZONE_SIZE 64                    // the length of a zone (in blocks) 
 #define CHUNK_LENGTH 16                 // chunk length/width
 
@@ -24,10 +24,22 @@ int roundDown(int n, int m) {
 }
 
 Terrain::Terrain(Renderer* vulkanContext)
-    : context(vulkanContext), m_chunks(), m_chunks_mutex(), m_generatedTerrain(), pipelineChunks(VK_NULL_HANDLE),
-    descriptorSetLayout(VK_NULL_HANDLE), pipelineLayout(VK_NULL_HANDLE), currentPipeline(nullptr),
-    threadPool(16), pendingChunks(), pendingChunksMutex(), drawableChunks(), drawableChunksMutex(),
-    transferCmdPoolManager{}
+    : context(vulkanContext), 
+    m_chunks(), 
+    m_chunks_mutex(), 
+    m_generatedTerrain(), 
+    threadPool(16), 
+    pipelineChunks(VK_NULL_HANDLE), 
+    pipelineGenerateTerrain(VK_NULL_HANDLE), 
+    pendingChunks(), 
+    pendingChunksMutex(), 
+    drawableChunks(), 
+    drawableChunksMutex(),
+    generateTerrainDescriptorSetLayout(VK_NULL_HANDLE),
+    generateTerrainPipelineLayout(VK_NULL_HANDLE),
+    descriptorSetLayout(VK_NULL_HANDLE),
+    pipelineLayout(VK_NULL_HANDLE), 
+    currentPipeline(nullptr)
 {}
 
 Terrain::~Terrain() {
@@ -35,6 +47,8 @@ Terrain::~Terrain() {
 
 void Terrain::buildPipelines()
 {
+    /* Main graphics pipeline */
+
     // Create descriptor set layout
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -196,25 +210,80 @@ void Terrain::buildPipelines()
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
+    /* Terrain Generation Compute Pipeline */
+
+    // Create descriptor set layout for compute
+    {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{}; 
+        uboLayoutBinding.binding = 0;
+        uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        uboLayoutBinding.descriptorCount = 1;
+
+        VkDescriptorSetLayoutBinding ssboLayoutBinding{};
+        ssboLayoutBinding.binding = 1;
+        ssboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        ssboLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        ssboLayoutBinding.descriptorCount = 1;
+
+        std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, ssboLayoutBinding };
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+
+        if (vkCreateDescriptorSetLayout(context->device, &layoutInfo, nullptr, &generateTerrainDescriptorSetLayout) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create descriptor set layout!");
+        }
+    }
+    
+    auto computeShaderCode = readFile("shaders/generate_terrain.spv");
+
+    VkShaderModule computeShaderModule = createShaderModule(context->device, computeShaderCode);
+
+    VkPipelineShaderStageCreateInfo computeShaderStageInfo{};
+    computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    computeShaderStageInfo.module = computeShaderModule;
+    computeShaderStageInfo.pName = "main";
+
+    VkPipelineLayoutCreateInfo computePipelineLayoutInfo{};
+    computePipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    computePipelineLayoutInfo.pushConstantRangeCount = 0;
+    computePipelineLayoutInfo.setLayoutCount = 1;
+    computePipelineLayoutInfo.pSetLayouts = &generateTerrainDescriptorSetLayout;
+
+    if (vkCreatePipelineLayout(context->device, &computePipelineLayoutInfo, nullptr, &generateTerrainPipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    VkComputePipelineCreateInfo computePipelineInfo{};
+    computePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    computePipelineInfo.layout = generateTerrainPipelineLayout;
+    computePipelineInfo.stage = computeShaderStageInfo;
+
+    if (vkCreateComputePipelines(context->device, VK_NULL_HANDLE, 1, &computePipelineInfo, nullptr, &pipelineGenerateTerrain) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create compute pipeline!");
+    }
+
     vkDestroyShaderModule(context->device, fragShaderModule, nullptr);
     vkDestroyShaderModule(context->device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(context->device, computeShaderModule, nullptr);
 
     currentPipeline = &pipelineChunks;
-
-    // init the command pool manager
-
-    QueueFamilyIndices indices = findQueueFamilies(context->physicalDevice, context->surface);
-    transferCmdPoolManager.init(context->device, indices.transferFamily.value());
 }
 
 void Terrain::destroyResources()
 {
     threadPool.destroy();
-    transferCmdPoolManager.cleanup(); 
     vkDestroyDescriptorSetLayout(context->device, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorSetLayout(context->device, generateTerrainDescriptorSetLayout, nullptr); 
 
     vkDestroyPipeline(context->device, pipelineChunks, nullptr);
     vkDestroyPipelineLayout(context->device, pipelineLayout, nullptr);
+
+    vkDestroyPipeline(context->device, pipelineGenerateTerrain, nullptr); 
+    vkDestroyPipelineLayout(context->device, generateTerrainPipelineLayout, nullptr); 
 
     for (const auto& pair : m_chunks) {
         const uPtr<Chunk>& chunk = pair.second;

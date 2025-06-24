@@ -158,11 +158,11 @@ void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDev
 }
 
 void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-    VkDevice& device, VkQueue& queueGraphics, VkQueue& queuePresent, VkQueue& queueTransfer) {
+    VkDevice& device, VkQueue& queueGraphicsAndCompute, VkQueue& queuePresent, VkQueue& queueTransfer) {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
+    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsAndComputeFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -201,7 +201,7 @@ void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
         throw std::runtime_error("failed to create logical device!");
     }
 
-    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &queueGraphics);
+    vkGetDeviceQueue(device, indices.graphicsAndComputeFamily.value(), 0, &queueGraphicsAndCompute);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &queuePresent);
     vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &queueTransfer);
 }
@@ -217,8 +217,8 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-            indices.graphicsFamily = i;
+        if ((queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+            indices.graphicsAndComputeFamily = i;
         }
 
         VkBool32 presentSupport = false;

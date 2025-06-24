@@ -77,8 +77,7 @@ void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDev
 /// Creates a Vulkan logical device and retrieves queues for graphics, presentation, transfer,
 /// and compute(TODO). 
 void createLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
-    VkDevice& device, VkQueue& queueGraphics,
-    VkQueue& queuePresent, VkQueue& queueTransfer);
+    VkDevice& device, VkQueue & queueGraphicsAndCompute, VkQueue& queuePresent, VkQueue& queueTransfer);
 
 VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code); 
 

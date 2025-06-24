@@ -81,7 +81,7 @@ void createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR
     VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
     QueueFamilyIndices queueFamilies = findQueueFamilies(physicalDevice, surface);
-    std::array<uint32_t, 2> indices = { queueFamilies.graphicsFamily.value(), queueFamilies.transferFamily.value() };
+    std::array<uint32_t, 2> indices = { queueFamilies.graphicsAndComputeFamily.value(), queueFamilies.transferFamily.value() };
 
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -128,7 +128,7 @@ void createImage(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR 
     VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
 {
     QueueFamilyIndices queueFamilies = findQueueFamilies(physicalDevice, surface);
-    std::array<uint32_t, 2> indices = { queueFamilies.graphicsFamily.value(), queueFamilies.transferFamily.value() };
+    std::array<uint32_t, 2> indices = { queueFamilies.graphicsAndComputeFamily.value(), queueFamilies.transferFamily.value() };
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

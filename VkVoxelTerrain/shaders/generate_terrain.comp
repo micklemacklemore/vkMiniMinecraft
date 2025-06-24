@@ -1,0 +1,20 @@
+#version 450
+
+layout (binding = 0) uniform ParameterUBO {
+    float x;
+    float z; 
+} ubo;
+
+layout(std140, binding = 1) buffer SSBO {
+   float Out[]; 
+};
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main() 
+{
+    uint index = gl_GlobalInvocationID.x;  
+
+    Out[index] = ubo.x; 
+
+}
