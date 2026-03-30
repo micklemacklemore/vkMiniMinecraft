@@ -4,6 +4,8 @@
 
 ### Progress Video 2
 
+https://github.com/user-attachments/assets/82dafa02-f92a-4557-9c07-6fcc015a725e
+
 ### Progress Video 1
 
 https://github.com/user-attachments/assets/70e80763-3f1c-4eee-a231-5f5287349a77
